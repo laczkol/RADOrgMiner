@@ -28,10 +28,10 @@ mapq=30
 fb_min_cov=5
 nbest=5
 altfrac=0.4
-vcfmiss=0.001
+vcfmiss=0.8
 mbs=0
 mrc=1
-minlen=1
+minlen=100
 
 while [[ "$#" -gt 0 ]];
 	do
@@ -147,34 +147,34 @@ while [[ "$#" -gt 0 ]];
 	shift
 done
 
-depends=`echo "makeblastdb blastn bedtools bwa samtools freebayes parallel vcf2fasta vcfcat vcftools muscle Rscript AMAS.py"` #samtools needs to be at least 1.10!
+depends="makeblastdb blastn bedtools bwa samtools freebayes parallel vcf2fasta vcftools muscle Rscript AMAS.py awk" #samtools needs to be at least 1.10!
 
 if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	echo "
 	This help menu is shown because you did not specify the reference genome and population map, the two mandatory parameters for this pipeline.
 	-r --reference-genome
-							File that contains the reference genome that should be used for both aligning the reads
+							The file that contains the reference genome that should be used for both aligning the reads and haplotype calling.
 	-popmap --population-map
-							Tab delimited text file with two columns: 1. identifier of samples without extension file extension; 2. population identifier. The names in the first column must exactly match the file names that contain the reads. The population identifier will be used by freebayes. This file can control which samples are being analysed.
+							Tab-delimited text file with two columns: 1. identifier of samples without the file extension; 2. population identifier. The names in the first column must exactly match the file names that contain the reads. The population identifier will be used by freebayes. Please make sure IDs do not contain dots. This file can control which samples are being analysed.
 	
 	Other paramters that can be specified:
 	-s --samples-directory
-							The directory where fastq file are stored. The extension of the files can be .fq, .fastq,. fq.gz and fastq.gz. When paired-end reads are used read pairs must be indicated by .1 and .2; e.g. SAMPLE_ID.1.fq.gz and SAMPLE_ID.2.fq.gz, which is the default of Stacks' process_radtags. [default is the current directory]
+							The directory where fastq files are stored. The extension of the files can be .fq, .fastq,. fq.gz and fastq.gz. When paired-end reads are used read pairs must be indicated by .1 and .2; e.g. SAMPLE_ID.1.fq.gz and SAMPLE_ID.2.fq.gz, which is the default of Stacks' process_radtags. [default is the current directory]
 
 	-o --output-directory
 							Output directory to store all output files. Use absolute path. [default is the current directory]
 
 	-mask --mask-reference 
-							Valid options are "yes" or "no" (without quotes). Indicates if the inverted repeat of the chloroplast should be masked with N. Automatically removes only the largest repeat. [default no]
+							Valid options are "yes" or "no" (without quotes). Indicates if the inverted repeat of the chloroplast should be masked with N. Automatically removes only the largest duplication. [default no]
 
 	-align --align-reads
 							Valid options are "yes" or "no" (without quotes). Indicates if reads stored in --samples-directory and named by first column of --population-map should be aligned to reference. [default yes]						
 
 	-np --number-of-processors
-							Number of processors (threads) that will be used. [default 1]
+							The number of processors (threads) that will be used. [default 1]
 
 	-type --sequencing-type						
-							Valid options are SE (single end) or PE (paired end). In case of PE read pairs should be separated to SAMPLE_ID.1.fq.gz and SAMPLE_ID.2.fq.gz. [default SE]
+							Valid options are SE (single-end) or PE (paired-end). In case of PE read pairs should be separated to SAMPLE_ID.1.fq.gz and SAMPLE_ID.2.fq.gz. [default SE]
 
 	-bwa_k --min-seed-length
 							Minimum seed length for the Burrows-Wheeler aligner. [default 19]
@@ -189,13 +189,13 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 							Gap-open penalty for the Burrows-Wheeler aligner. [default 6]
 
 	-call --call-haplotypes
-							Valid options are "yes" or "no" (without quotes). Indicates if haplotypes should be extracted to vcf and fasta format. The fasta format contains the entire sequences of the loci. It is suggested to first align reads to the reference, then investigate the read depth of loci using the bed files produced after alignment that also report the bed coverage. 
+							Valid options are "yes" or "no" (without quotes). Indicates if haplotypes should be extracted to vcf and fasta format. The fasta format contains the entire sequences of the loci. It is suggested to first align reads to the reference, then investigate the read depth of loci. The bed files produced after alignment also report the bed coverage. 
 
 	-mbc --min-bed-coverage 
-							Minimal coverage of a loci to be included in the output haplotypes. If the bed coverage of a loci is larger in any sample than this value, it will be a subject of analysis in all the samples. As organellar DNA can be overrepresented, it can be a really high number (e.g. 500). When trying different threshold it is not needed to align the reads to the reference again. [default 3]  
+							Minimal coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, it will be a subject of analysis in all the samples. As organellar DNA can be overrepresented, it can be a really high number (e.g. 500). When trying different thresholds it is not needed to align the reads to the reference again, only the genotype call step should be redone. [default 3]  
 
 	-sp --subsampling-prop
-							Float value betwen 0 and 1. To use less memory when calling haplotypes, each bed locus can be downsampled using samtools view by this proportion. 0.1 means: use 10% percent of all the reads found in a bed locus. [default 1.0]
+							Float value between 0 and 1. To use less memory when calling haplotypes, each bed locus can be downsampled using samtools view by this proportion. 0.1 means: use 10% percent of all the reads found in a bed locus. The effect of downsampling is not tested properly, so use at your own risk and double check the results. [default 1.0]
 
 	-mbs --min-bases-sequenced
 							Defines the minimum number of bases sequenced in a sample to be included in the genotype calling. [default 0]
@@ -204,7 +204,7 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 							Defines the minimum number of reads needed in a sample to be included in the genotype calling. [default 1]
 
 	-p --fb-ploidy
-							Ploidy level used by freebayes to call haplotypes. When analysing organellar DNA it should be left unchanged. [default 1]
+							Ploidy level used by freebayes to call haplotypes. For organellar DNA it should be 1. [default 1]
 
 	-q --fb-min-base-quality
 							Minimal base quality to include in the analysis. [default 20]
@@ -222,19 +222,19 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 							Minimal coverage to accept when calling haplotypes. [default 5]
 
 	-n --fb-best-alleles
-							Number of most probable alleles to consider. [default 5]
+							The number of most probable alleles to consider. [default 5]
 
 	-minlen --min-locus-length
-							Minimal length of loci to include in the final dataset. [default 1]
+							Minimal length of loci to include in the final dataset. [default 100]
 
 	-miss --max-missing
-							Maximal the missingness when filterig variant sites to vcf. [default 0.75]
+							Maximal missingness when filtering sites. [default 0.8]
 
-	Dependices are echo "$depends"
+	Dependencies are echo "$depends"
 	Please make sure that samtools version is at least 1.10. It is not checked automatically.
 
 	example:
-	plastreads_v_0.8.sh -o ~/dataset/someoutput --mask-reference yes -r ~/dataset/reference_chloroplast.fa -align yes -call yes -np 24 -popmap ~/dataset/popmap -type PE -mbc 1000 -mbs 5000 -sp 0.1 -s ~/dataset/raw_reads
+	RROG.sh -o ~/dataset/someoutput --mask-reference yes -r ~/dataset/reference_chloroplast.fa -align yes -call yes -np 24 -popmap ~/dataset/popmap -type PE -mbc 1000 -mbs 5000 -sp 0.1 -s ~/dataset/raw_reads
 	"
 	exit 1
 fi
@@ -245,7 +245,7 @@ do
 		echo $i found
 	else 
 		echo $i is not found
-		echo "Please install $i or specify it in your PATH"
+		echo "Please install $i or specify it in the '$PATH'"
 		echo "The pipeline will continue now, but unexpected behaviour may follow"
 	fi
 done
@@ -660,12 +660,6 @@ if [[ $call == "yes" ]]; then
 		rm ${outdir}/fasta_loci/* #by using find it would not run into an error when dir. is empty
 	fi
 
-	if [[ ! -d ${outdir}/vcf_haplotypes ]]; then
-		mkdir ${outdir}/vcf_haplotypes
-	elif [[ -d ${outdir}/vcf_haplotypes ]]; then
-		rm ${outdir}/vcf_haplotypes/*
-	fi
-
 	ref_id=`head -n 1 $ref_db | sed 's/>//' | cut -f 1 -d " "`
 	cd ${outdir}/aligned/vcf_loci
 
@@ -688,7 +682,6 @@ if [[ $call == "yes" ]]; then
 	do
 		#echo $i
 		vcftools --vcf ${i}.vcf --max-missing $vcfmiss --recode --out $i 2> /dev/null
-		vcftools --vcf ${i}.vcf --max-missing $vcfmiss --non-ref-ac-any 1 --recode --recode-INFO-all --out ${outdir}/vcf_haplotypes/${i} &> /dev/null
 	done
 
 	nrecode_comment=`for i in *recode.vcf
@@ -715,10 +708,13 @@ if [[ $call == "yes" ]]; then
 		do
 		grep -v "^#" ${outdir}/aligned/vcf_loci/${i}.recode.vcf | cut -f 2 | sed -n '1p;$p' | perl -pe 's/\n/\t/' 
 		echo 
-		done > ${outdir}/aligned/vcf_loci/${i}.range
+		done | sed 's/1\t/0\t/' > ${outdir}/aligned/vcf_loci/${i}.range
 
 		paste <(echo $inds_mbs | perl -pe 's/ /\n/g') <(cat ${i}.range) > ${outdir}/fasta_loci/${i}.bedlocus
 	done 
+
+	rm *range
+	rm *fa
 
 	cd ${outdir}/fasta_loci
 	for i in $recodeloc
@@ -727,27 +723,25 @@ if [[ $call == "yes" ]]; then
 		awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' break_${i}.fa > miss_${i}.fa
 		bedtools getfasta -fi miss_${i}.fa -fo ${i}.fa -bed ${i}.bedlocus &> /dev/null
 		sed -i 's/:.*//' ${i}.fa
-		sed -i -e '/^[^>]/s/N/-/g' ${i}.fa
+		sed -i -e '/^[^>]/s/N/-/g' ${i}.fa #missing is coded as "-"
 	done
 	rm unaligned_*.fa
 	rm break_*.fa
 	rm miss_*.fa
 	rm *.fai
+	rm *bedlocus
 
 	AMAS.py summary -i loc*fa -f fasta -d dna
 
 	cd $outdir
 	AMAS.py concat -i fasta_loci/loc*fa -f fasta -d dna -t concat_loci.fa -p concat_loci.parts
-
+	sed -i 's/^/DNA,/' concat_loci.parts
 
 	cd $cdir
 
 	echo "Sequence of each locus can be found in ${outdir}/fasta_loci"
 	echo "Concatenated sequence of all loci is written to ${outdir}/concat_loci.fa"
-	echo "Variant sites of haplotypes in vcf format for each bed locus can be found in ${outdir}/vcf_haplotypes"
-	echo "Variant sites of all loci can be found in ${outdir}/haplotypes.vcf"
-	echo "Missingness per site and per individual of loci that passed filters can be found in ${outdir}/haplotypes.lmiss and ${outdir}/haplotypes.imiss"
-
+	echo "Summary of alignments can be found in ${outdir}/fasta_loci/summary.txt"
 fi
 
 
