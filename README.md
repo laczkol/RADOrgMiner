@@ -252,7 +252,7 @@ The x axis represents the the position along the reference genome, whereas the y
 The second step of the genotyping is the calling of haplotypes. It can be concluded after the checking the statistics of the alignments that an `-mbc` value of 15 should retrieve the sequence of all loci, so the haplotype calling can be run with the following command:
 
 ````bash
-RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align no -call yes -mbc 20 -np 6 -popmap popmap -type PE 
+RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align no -call yes -mbc 15 -np 6 -popmap popmap -type PE 
 ````
 
 If you specify an output directory, please use the same for both the alignment and haplotype call steps. The script assumes that the directory `aligned`, that contains the files needed for haplotype calling, is located **within** the output directory. Using six CPU cores haplotype calling of this dataset should take approximately 40 seconds with a maximal memory usage of 47 Mb. 
