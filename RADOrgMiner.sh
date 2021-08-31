@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo errexit -euo pipefail -euo nounset
 
-echo "This is RROG (Reduced Representation sequencing Organellar read Genotyper) v0.8"
+echo "This is RADOrgMiner (RADseq Organellar DNA Miner and Genotyper) v0.8"
 
 echo "Run started at $(date)"
 
@@ -234,7 +234,7 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	Please make sure that samtools version is at least 1.10. It is not checked automatically.
 
 	example:
-	RROG.sh -o ~/dataset/someoutput --mask-reference yes -r ~/dataset/reference_chloroplast.fa -align yes -call yes -np 24 -popmap ~/dataset/popmap -type PE -mbc 1000 -mbs 5000 -sp 0.1 -s ~/dataset/raw_reads
+	RADOrgMiner.sh -o ~/dataset/someoutput --mask-reference yes -r ~/dataset/reference_chloroplast.fa -align yes -call yes -np 24 -popmap ~/dataset/popmap -type PE -mbc 1000 -mbs 5000 -sp 0.1 -s ~/dataset/raw_reads
 	"
 	exit 1
 fi
