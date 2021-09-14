@@ -5,7 +5,7 @@
 If you find this pipeline useful, please do not forget to credit our work by citing this paper:
 
 ````
-Laczkó, Jordán, Sramkó (2021) A magnet to draw a bright needle out from the haystack – RADOrgMiner, an automated pipeline to genotype organellar reads from RADseq data, submitted
+Laczkó, L., Jordán, S., Sramkó, G. (2021) A magnet to draw a bright needle out from the haystack – RADOrgMiner, an automated pipeline to genotype organellar reads from RADseq data, submitted
 ````
 
 ## Overview
