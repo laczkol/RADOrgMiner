@@ -61,7 +61,7 @@ To run the pipeline, the two mandatory parameters to specify are the reference g
         -r --reference-genome
                                                         The file that contains the reference genome that should be used for both aligning the reads haplotype calling.
         -popmap --population-map
-                                                        Tab-delimited text file with two columns: 1. identifier of samples without the file extension; 2. population identifier. The names in the first column must exactly match the file names that contain the reads. The population identifier will be used by freebayes. Please make sure IDs do not contain dots. This file can control which samples are being analysed.
+                                                        Tab-delimited text file with two columns: 1. identifier of samples without the file extension; 2. population identifier. The names in the first column must exactly match the file names that contain the reads. The population identifier will be used by freebayes. Please make sure IDs do not contain dots. This file can control which samples are being analyzed.
 ````
 
 The reference genome is used for aligning and haplotype calling, whereas the main goal to use a population map is to control which sample files should be included in the run. The population map should be a tab-delmited text file with sample_id<tab>population. File extensions should not be included in the first column, please specify only the sample names that should be analyzed. The second column can truly reflect the real populations, but, if desirable, any grouping can be specified (e.g. species, subspecies). Freebayes will use the grouping as a prior. Please make sure that empty lines and extra white spaces are not included in the population map file. Sample names also should not contain white spaces.
@@ -272,5 +272,4 @@ loc_NC_000932_97333-98493_0-1160.fa     6       1141    1       1
 
 This analysis shows that all loci were polymorphic and also contain informative sites. If a subset of the loci is desirable, it can be easily achieved by using `AMAS.py` or any software that is designed for viewing and manipulating DNA sequences in fasta format.
 
-
-
+Leaving the value of maximum missingness default (0.8) resulted in seven loci. By the visual inspection of the mean depth plot produced after alignment step eight loci can be assumed. Setting the value of `-miss` results in eight loci, on of them is absent (loc_NC_000932_83310-84206_0-896) in *A. lyrata* due to allelic dropout (ADO) and show only one polymorphic site that is not informative. If more distantly related samples are analyzed with RADOrgMiner care should be taken to set this value correctly.
