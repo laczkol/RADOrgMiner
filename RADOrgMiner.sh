@@ -711,12 +711,13 @@ if [[ $call == "yes" ]]; then
 		done | sed 's/1\t/0\t/' > ${outdir}/aligned/vcf_loci/${i}.range
 
 		paste <(echo $inds_mbs | perl -pe 's/ /\n/g') <(cat ${i}.range) > ${outdir}/fasta_loci/${i}.bedlocus
-	done 
+	done
 
 	rm *range
 	rm *fa
 
 	cd ${outdir}/fasta_loci
+	wc -l *fa | awk '$1 == 0' | sed 's/^ *//' | cut -f 2 -d" " | xargs rm
 	for i in $recodeloc
 	do 
 		muscle -in unaligned_${i}.fa -out break_${i}.fa &> /dev/null
