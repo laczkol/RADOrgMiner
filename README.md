@@ -73,10 +73,10 @@ The working directories by default are assumed to be the current directory, but 
                                                         The directory where fastq files are stored. The extension of the files can be .fq, .fastq,. fq.gz and fastq.gz. When paired-end reads are used, read pairs must be indicated by .1 and .2; e.g. SAMPLE_ID.1.fq.gz and SAMPLE_ID.2.fq.gz, which is the default of Stacks' process_radtags. [default is the current directory]
 
         -o --output-directory
-                                                        Output directory to store all output files. Use absolute path. [default is the current directory]
+                                                        Output directory to store all output files. [default is the current directory]
 ````
 
-Input files can have a `fq` or `fastq` extension and can be gzipped (`fq.gz` or `fastq.gz`).  The naming convention of paired-end reads follows the output of the `process_radtags` component of [Stacks](https://catchenlab.life.illinois.edu/stacks/) ([Rochette et al. 2019](https://doi.org/10.1111/mec.15253)). The pairs should be indicated by `.1` and `.2` before the file extension. If you specify an input or output directory, please use an absolute path (e.g. /home/user/dummy_reads) instead of a relative path (e.g. ../dummy_reads).
+Input files can have a `fq` or `fastq` extension and can be gzipped (`fq.gz` or `fastq.gz`).  The naming convention of paired-end reads follows the output of the `process_radtags` component of [Stacks](https://catchenlab.life.illinois.edu/stacks/) ([Rochette et al. 2019](https://doi.org/10.1111/mec.15253)). The pairs should be indicated by `.1` and `.2` before the file extension.
 
 The main options for the first step of the pipeline, the alignment of reads are the following:
 

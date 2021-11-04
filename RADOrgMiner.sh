@@ -147,7 +147,7 @@ while [[ "$#" -gt 0 ]];
 	shift
 done
 
-depends="makeblastdb blastn bedtools bwa samtools freebayes parallel vcf2fasta vcftools muscle Rscript AMAS.py awk" #samtools needs to be at least 1.10!
+depends="makeblastdb blastn bedtools bwa samtools freebayes parallel vcf2fasta vcftools muscle Rscript AMAS.py awk realpath" #samtools needs to be at least 1.10!
 
 if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	echo "
@@ -156,7 +156,7 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 							The file that contains the reference genome that should be used for both aligning the reads and haplotype calling.
 	-popmap --population-map
 							Tab-delimited text file with two columns: 1. identifier of samples without the file extension; 2. population identifier. The names in the first column must exactly match the file names that contain the reads. The population identifier will be used by freebayes. Please make sure IDs do not contain dots. This file can control which samples are being analysed.
-	
+
 	Other paramters that can be specified:
 	-s --samples-directory
 							The directory where fastq files are stored. The extension of the files can be .fq, .fastq,. fq.gz and fastq.gz. When paired-end reads are used read pairs must be indicated by .1 and .2; e.g. SAMPLE_ID.1.fq.gz and SAMPLE_ID.2.fq.gz, which is the default of Stacks' process_radtags. [default is the current directory]
@@ -164,7 +164,7 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	-o --output-directory
 							Output directory to store all output files. Use absolute path. [default is the current directory]
 
-	-mask --mask-reference 
+	-mask --mask-reference
 							Valid options are "yes" or "no" (without quotes). Indicates if the inverted repeat of the chloroplast should be masked with N. Automatically removes only the largest duplication. [default no]
 
 	-align --align-reads
@@ -173,7 +173,7 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	-np --number-of-processors
 							The number of processors (threads) that will be used. [default 1]
 
-	-type --sequencing-type						
+	-type --sequencing-type
 							Valid options are SE (single-end) or PE (paired-end). In case of PE read pairs should be separated to SAMPLE_ID.1.fq.gz and SAMPLE_ID.2.fq.gz. [default SE]
 
 	-bwa_k --min-seed-length
@@ -240,10 +240,10 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 fi
 
 for i in $depends
-do 
+do
 	if which $i; then
 		echo $i found
-	else 
+	else
 		echo $i is not found
 		echo "Please install $i or specify it in the '$PATH'"
 		echo "The pipeline will continue now, but unexpected behaviour may follow"
@@ -266,6 +266,8 @@ if [[ ! -d ${outdir} ]]; then
 	echo "Output directory does not exist"
 	exit 1
 fi
+
+outdir=`realpath $outdir`
 
 echo "Output directory is $outdir" 
 echo "Reference genome is $ref"
@@ -298,44 +300,44 @@ inds=`cut -f 1 $popmap | sort`
 if [[ "$mask" == "yes" ]]; then													 #ALWAYS SPECIFY THE ORIGINAL, UNMASKED REFERENCE
 	ref1=`echo $ref | cut -f 1 -d "."`
 	if [ -f "${ref1}_nr.fasta" ]; then
-	
+
 		echo "Masked reference file found"
-	
+
 		echo "Assign ${ref1}_nr.fasta to reference database"
-	
+
 		ref_db=${ref1}_nr.fasta
-	
+
 	else
 		echo "Attempting to find boundaries of inverted repeat in $ref then masking reference fasta file"
-	
+
 		makeblastdb -in $ref -dbtype nucl -out ${ref1}_blastdb
-	
+
 		blastn -db ${ref1}_blastdb -query $ref -out ${ref1}_selfblast.fmt6 -outfmt '6 qseqid qstart qend length evalue qseq pident' -num_threads $np
-	
+
 		cut -f 1-4 ${ref1}_selfblast.fmt6 | awk 'NR == 2{print;exit}' | cut -f 1-3 > ${ref1}_IR
-	
+
 		mv ${ref1}_IR ${ref1}_IR_boundary
-	
+
 		bedtools maskfasta -fi $ref -bed ${ref1}_IR_boundary -fo ${ref1}_nr.fasta 
-	
+
 		echo "Assigning ${ref1}_nr.fasta to reference database"
-	
+
 		ref_db=${ref1}_nr.fasta
 	fi
 elif [[ "$mask" == "no" ]]; then
 	ref1=`echo $ref | cut -f 1 -d "."`
 	if [ -f "${ref1}_nr.fasta" ]; then
-	
+
 		echo "Masked reference file found"
-	
+
 		echo "Assign ${ref1}_nr.fasta to reference database"
-	
+
 		ref_db=${ref1}_nr.fasta
 	else
 		echo "Masking of reference was not requested"
-	
+
 		echo "Assign $ref to reference database"
-	
+
 		ref_db=$ref
 	fi
 fi
@@ -357,18 +359,18 @@ if [[ "$map" == "yes" && "$type" == "SE" ]]; then
 		mkdir ${outdir}/aligned
 	fi
 	mkdir ${outdir}/map_reads
-	
+
 	bwa index $ref_db
-	
+
 	for i in $inds;
 	do
 		r1=`find $indir -maxdepth 1 -name ${i}.fq -or -name ${i}.fq.gz -or -name ${i}.fastq -or -name ${i}.fastq.gz`  #extension can be fq,fq.gz,fastq,fastq.gz
-	
+
 		if [[ ${#r1} -le 1 ]]; then
 			echo "Sample $i was not found"
 			exit 1
 		fi
-		
+
 		echo "Aligning $r1 to $ref_db using bwa" 					      #sequence name must match with popmap
 
 		bwa mem -t $np -k $bwa_k -A $bwa_A -B $bwa_B -O $bwa_O -R "@RG\tID:$i\tSM:$i\tPL:Illumina" $ref_db $r1 2> /dev/null |\
@@ -465,7 +467,7 @@ elif [[ "$map" == "yes" && "$type" == "PE" ]]; then
 	do
 		r1=`find $indir -maxdepth 1 -name ${i}.1.fq -or -name ${i}.1.fq.gz -or -name ${i}.1.fastq -or -name ${i}.1.fastq.gz`
 		r2=`find $indir -maxdepth 1 -name ${i}.2.fq -or -name ${i}.2.fq.gz -or -name ${i}.2.fastq -or -name ${i}.2.fastq.gz`
-			
+
 		if [[ ${#r1} -le 1 ]]; then
 			echo "Sample $i was not found"
 			exit 1
@@ -487,7 +489,7 @@ elif [[ "$map" == "yes" && "$type" == "PE" ]]; then
 		#to emit singlets use samtools view -f 4 instead of -f 12
 		nsites=`samtools depth ${outdir}/aligned/${i}.bam | awk '$3 > 0' | wc -l`
 		echo "There are $nsites sites in the samples $i with read depth > 0"
-		
+
 		samtools coverage ${outdir}/aligned/${i}.bam -m
 
 		samtools depth -d 0 -a ${outdir}/aligned/${i}.bam > ${outdir}/aligned/${i}.depth
@@ -575,7 +577,7 @@ if [[ $call == "yes" ]]; then
 	done
 
 	cut -f 1-3 ${outdir}/aligned/*_merge.bedcov | bedtools sort | bedtools merge > ${outdir}/aligned/merged_alignments.bed
-	
+
 	echo "bed regions with a minimum bed coverage of $min_bed_cov are:"
 	cat ${outdir}/aligned/merged_alignments.bed
 
@@ -599,11 +601,11 @@ if [[ $call == "yes" ]]; then
 		#echo $coord
 		samtools view -h -b -L <(echo $coord) -s $sub_prop ${outdir}/aligned/${i}.bam > "${outdir}/aligned/ssmp_${i}_${sub_prop}_${coord}.bam"
 		done
-			
+
 		samtools merge -b <(ls ${outdir}/aligned/ssmp_${i}*.bam) -f ${outdir}/aligned/${i}_subsampled.bam
-		
+
 		rm ${outdir}/aligned/ssmp_${i}_*.bam
-			
+
 		samtools index -@ $np ${outdir}/aligned/${i}_subsampled.bam
 	done
 
@@ -635,8 +637,8 @@ if [[ $call == "yes" ]]; then
 	done
 
 	cd ${outdir}/aligned/bed_loci
-	rename 's/\t/_/' ./* 
-	rename 's/\t/-/' ./* 
+	rename 's/\t/_/' ./*
+	rename 's/\t/-/' ./*
 	rename 's/..:/_/' ./*
 	loc=`ls`
 	cd $cdir
@@ -664,7 +666,7 @@ if [[ $call == "yes" ]]; then
 	cd ${outdir}/aligned/vcf_loci
 
 	echo "Exporting sequnces of bed loci to fasta and variant sites to vcf"
-	
+
 	ncomment=`for i in *.vcf; do grep "^#" $i | wc -l; done | sort | head -n 1`
 
 	find ./ -name "*.vcf" -type f -exec awk -v x=$ncomment 'NR==x+1{exit 1}' {} \; -exec echo rm {} \; > rmvcf
@@ -690,11 +692,11 @@ if [[ $call == "yes" ]]; then
 	done | sort | head -n 1`
 
 	find ./ -name "*.recode.vcf" -type f -exec awk -v x=$nrecode_comment -v y=$minlen 'NR==x+y{exit 1}' {} \; -exec echo rm {} \; > rmrecodevcf
-	
+
 	if [[ $(wc -l <rmrecodevcf) -ge 1 ]]; then 
 		sh rmrecodevcf &> /dev/null
 		rm rmrecodevcf
-	else	
+	else
 		rm rmrecodevcf
 	fi
 
@@ -707,27 +709,22 @@ if [[ $call == "yes" ]]; then
 		for l in $inds_mbs
 		do
 		grep -v "^#" ${outdir}/aligned/vcf_loci/${i}.recode.vcf | cut -f 2 | sed -n '1p;$p' | perl -pe 's/\n/\t/' 
-		echo 
+		echo
 		done | sed 's/1\t/0\t/' > ${outdir}/aligned/vcf_loci/${i}.range
 
-		paste <(echo $inds_mbs | perl -pe 's/ /\n/g') <(cat ${i}.range) > ${outdir}/fasta_loci/${i}.bedlocus
+		paste <(echo $inds_mbs | perl -pe 's/ /\n/g') <(cat ${i}.range) | sed -e 's/\t/:/' -e 's/\t/-/' -e 's/\t//'  > ${outdir}/fasta_loci/${i}.bedlocus
 	done
 
 	rm *range
 	rm *fa
 
 	cd ${outdir}/fasta_loci
-
-	empty_loci=`wc -l *fa | awk '$1 == 0' | sed 's/^ *//' | cut -f 2 -d" "`
-	if [[ ${#empty_loci} -ge 1 ]]; then
-		echo $empty_loci | xargs rm
-	fi
-
 	for i in $recodeloc
-	do 
+	do
 		muscle -in unaligned_${i}.fa -out break_${i}.fa &> /dev/null
 		awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' break_${i}.fa > miss_${i}.fa
-		bedtools getfasta -fi miss_${i}.fa -fo ${i}.fa -bed ${i}.bedlocus &> /dev/null
+		samtools faidx miss_${i}.fa -r ${i}.bedlocus -o sidx_${i}.fa 2> /dev/null
+		awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' sidx_${i}.fa > ${i}.fa
 		sed -i 's/:.*//' ${i}.fa
 		sed -i -e '/^[^>]/s/N/-/g' ${i}.fa #missing is coded as "-"
 	done
@@ -735,6 +732,7 @@ if [[ $call == "yes" ]]; then
 	rm break_*.fa
 	rm miss_*.fa
 	rm *.fai
+	rm sidx*fa
 	rm *bedlocus
 
 	AMAS.py summary -i loc*fa -f fasta -d dna
