@@ -191,7 +191,7 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	-call --call-haplotypes
 							Valid options are "yes" or "no" (without quotes). Indicates if haplotypes should be extracted to vcf and fasta format. The fasta format contains the entire sequences of the loci. It is suggested to first align reads to the reference, then investigate the read depth of loci. The bed files produced after alignment also report the bed coverage. 
 
-	-mbc --min-bed-coverage 
+	-mbc --min-bed-coverage
 							Minimal coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, it will be a subject of analysis in all the samples. As organellar DNA can be overrepresented, it can be a really high number (e.g. 500). When trying different thresholds it is not needed to align the reads to the reference again, only the genotype call step should be redone. [default 3]  
 
 	-sp --subsampling-prop
