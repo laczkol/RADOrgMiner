@@ -717,7 +717,12 @@ if [[ $call == "yes" ]]; then
 	rm *fa
 
 	cd ${outdir}/fasta_loci
-	wc -l *fa | awk '$1 == 0' | sed 's/^ *//' | cut -f 2 -d" " | xargs rm
+
+	empty_loci=`wc -l *fa | awk '$1 == 0' | sed 's/^ *//' | cut -f 2 -d" "`
+	if [[ ${#empty_loci} -ge 1 ]]; then
+		echo $empty_loci | xargs rm
+	fi
+
 	for i in $recodeloc
 	do 
 		muscle -in unaligned_${i}.fa -out break_${i}.fa &> /dev/null
