@@ -593,7 +593,7 @@ if [[ $call == "yes" ]]; then
 
 	for i in $inds_mbs
 	do
-		echo $i
+		#echo $i
 		cat ${outdir}/aligned/merged_alignments.bed |\
 		while read line
 		do 
@@ -637,10 +637,15 @@ if [[ $call == "yes" ]]; then
 	done
 
 	cd ${outdir}/aligned/bed_loci
-	rename 's/\t/_/' ./*
-	rename 's/\t/-/' ./*
-	rename 's/..:/_/' ./*
+
+	for i in loc*
+	do
+		ii=`echo "$i" | sed -e 's/..:/_/' -e 's/\t/_/' -e 's/\t/-/'`
+		mv "$i" "$ii"
+	done
+	
 	loc=`ls`
+	
 	cd $cdir
 
 	if [[ ! -d ${outdir}/aligned/vcf_loci ]]; then
