@@ -661,16 +661,10 @@ if [[ $call == "yes" ]]; then
 		echo "freebayes -f ${outdir}/aligned/reference_subset.fa -L ${outdir}/aligned/bamlist --ploidy $ploidy -q $minqual -Q $mismatchqual -m $mapq --min-coverage $fb_min_cov -w -j -V -E -1 -n $nbest -F $altfrac --populations $popmap_mbs --report-monomorphic -t ${outdir}/aligned/bed_loci/${i} > ${outdir}/aligned/vcf_loci/${i}.vcf"
 	done | parallel -j $np
 
-	if [[ ! -d ${outdir}/fasta_loci ]]; then
-		mkdir ${outdir}/fasta_loci
-	elif [[ -d ${outdir}/fasta_loci ]]; then
-		rm ${outdir}/fasta_loci/* #by using find it would not run into an error when dir. is empty
-	fi
+	echo "Filtering for missingness and minimum locus length"
 
 	ref_id=`head -n 1 $ref_db | sed 's/>//' | cut -f 1 -d " "`
 	cd ${outdir}/aligned/vcf_loci
-
-	echo "Exporting sequnces of bed loci to fasta and variant sites to vcf"
 
 	ncomment=`for i in *.vcf; do grep "^#" $i | wc -l; done | sort | head -n 1`
 
@@ -704,6 +698,30 @@ if [[ $call == "yes" ]]; then
 	else
 		rm rmrecodevcf
 	fi
+
+	#STOP IF THERE ARE NO RECODE VCFS
+	touch temp.recode.vcf
+	nrecodeloc=`ls *recode.vcf | wc -l`
+
+	if [[ $nrecodeloc -le 1 ]]; then
+		echo "############################################################################################################################################"
+		echo "There are no loci left to process after filtering for minimum locus length (-minlen ${minlen}) and missingness (-miss ${vcfmiss})"
+		echo "There is a chance that the analyzed dataset does not contain any organellar loci, or the -minlen, -miss or -mbc values were set incorrectly"
+		echo "Please check the results of the alignment step to set these parameters correctly"
+		echo "############################################################################################################################################"
+		rm temp.recode.vcf
+		exit 1
+	else
+		rm temp.recode.vcf
+	fi
+
+	if [[ ! -d ${outdir}/fasta_loci ]]; then
+		mkdir ${outdir}/fasta_loci
+	elif [[ -d ${outdir}/fasta_loci ]]; then
+		rm ${outdir}/fasta_loci/*
+	fi
+
+	echo "Exporting sequnces of bed loci to fasta"
 
 	recodeloc=`ls *.recode.vcf | sed 's/.recode.vcf//'`
 	for i in $recodeloc
