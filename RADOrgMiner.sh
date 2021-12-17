@@ -699,7 +699,6 @@ if [[ $call == "yes" ]]; then
 		rm rmrecodevcf
 	fi
 
-	#STOP IF THERE ARE NO RECODE VCFS
 	touch temp.recode.vcf
 	nrecodeloc=`ls *recode.vcf | wc -l`
 
