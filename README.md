@@ -44,6 +44,8 @@ Downloading the RADOrgMiner.sh script or cloning this repository to the desired 
 
 - [awk](https://www.gnu.org/software/gawk/manual/gawk.html) is an effective programming language that is used at many points of the pipeline to filter data and convert strings
 
+- [parallel](https://www.gnu.org/software/parallel/) to run tasks in parallel
+
 - [GNU Core Utilities](https://www.gnu.org/software/coreutils/) is practically the spine of the pipeline. It is used in the majority of `bash` scripts and should be preinstalled on most of the GNU/Linux-based operating systems. `RADOrgMiner.sh` will not run at all without this.
 
   These dependencies can be installed with a package manager (e.g. `apt` or `conda`) or can be downloaded from GitHub and should be fairly easy to install. The presence of dependencies are checked before each run, but if some of them are missing the pipeline is not stopped. 
