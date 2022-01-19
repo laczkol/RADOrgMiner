@@ -50,6 +50,8 @@ Downloading the RADOrgMiner.sh script or cloning this repository to the desired 
 
   If you use these tools within our pipeline, please do not forget to credit the authors of the above-mentioned softwares by citing them.
 
+  After cloning the repository, dependencies can be installed using the `conda` package manager by creating an environment specified in the `yaml` file found in the RADOrgMiner directory.
+
 ## Details and example
 
 The help menu of RADOrgMiner.sh contains all the parameters necessary to set to run the pipeline. It can be invoked by just typing `RADOrgMiner.sh` in the terminal without specifying any parameters.
