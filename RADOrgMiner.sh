@@ -230,7 +230,7 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	-miss --max-missing
 							Maximal missingness when filtering sites. [default 0.8]
 
-	Dependencies are echo "$depends"
+	Dependencies are echo ""$depends""
 	Please make sure that samtools version is at least 1.10. It is not checked automatically.
 
 	example:
@@ -241,10 +241,10 @@ fi
 
 for i in $depends
 do
-	if which $i; then
-		echo $i found
+	if which "$i"; then
+		echo "$i" found
 	else
-		echo $i is not found
+		echo "$i" is not found
 		echo "Please install $i or specify it in the '$PATH'"
 		echo "The pipeline will continue now, but unexpected behaviour may follow"
 	fi
@@ -267,7 +267,7 @@ if [[ ! -d ${outdir} ]]; then
 	exit 1
 fi
 
-outdir=`realpath $outdir`
+outdir=$(realpath "$outdir")
 
 echo "Output directory is $outdir" 
 echo "Reference genome is $ref"
@@ -292,13 +292,13 @@ echo "Minimal number reads required to be aligned in a samples is set to $mrc"
 echo "Minimal bed coverage to consider a locus is $min_bed_cov"
 
 echo "popmap is:"
-cat $popmap
+cat "$popmap"
 
-inds=`cut -f 1 $popmap | sort`
+inds=$(cut -f 1 "$popmap" | sort)
 
 #depends: makeblastdb, blastn, bedtools
 if [[ "$mask" == "yes" ]]; then													 #ALWAYS SPECIFY THE ORIGINAL, UNMASKED REFERENCE
-	ref1=`echo $ref | cut -f 1 -d "."`
+	ref1=$(echo "$ref" | cut -f 1 -d ".")
 	if [ -f "${ref1}_nr.fasta" ]; then
 
 		echo "Masked reference file found"
@@ -310,22 +310,22 @@ if [[ "$mask" == "yes" ]]; then													 #ALWAYS SPECIFY THE ORIGINAL, UNMAS
 	else
 		echo "Attempting to find boundaries of inverted repeat in $ref then masking reference fasta file"
 
-		makeblastdb -in $ref -dbtype nucl -out ${ref1}_blastdb
+		makeblastdb -in "$ref" -dbtype nucl -out "${ref1}"_blastdb
 
-		blastn -db ${ref1}_blastdb -query $ref -out ${ref1}_selfblast.fmt6 -outfmt '6 qseqid qstart qend length evalue qseq pident' -num_threads $np
+		blastn -db "${ref1}"_blastdb -query "$ref" -out "${ref1}"_selfblast.fmt6 -outfmt '6 qseqid qstart qend length evalue qseq pident' -num_threads "$np"
 
-		cut -f 1-4 ${ref1}_selfblast.fmt6 | awk 'NR == 2{print;exit}' | cut -f 1-3 > ${ref1}_IR
+		cut -f 1-4 "${ref1}"_selfblast.fmt6 | awk 'NR == 2{print;exit}' | cut -f 1-3 > "${ref1}"_IR
 
-		mv ${ref1}_IR ${ref1}_IR_boundary
+		mv "${ref1}"_IR "${ref1}"_IR_boundary
 
-		bedtools maskfasta -fi $ref -bed ${ref1}_IR_boundary -fo ${ref1}_nr.fasta 
+		bedtools maskfasta -fi "$ref" -bed "${ref1}"_IR_boundary -fo "${ref1}"_nr.fasta 
 
 		echo "Assigning ${ref1}_nr.fasta to reference database"
 
 		ref_db=${ref1}_nr.fasta
 	fi
 elif [[ "$mask" == "no" ]]; then
-	ref1=`echo $ref | cut -f 1 -d "."`
+	ref1=$(echo "$ref" | cut -f 1 -d ".")
 	if [ -f "${ref1}_nr.fasta" ]; then
 
 		echo "Masked reference file found"
@@ -350,21 +350,21 @@ fi
 
 if [[ "$map" == "yes" && "$type" == "SE" ]]; then
 	if [[ -d "${outdir}/map_reads" ]]; then
-		rm -r ${outdir}/map_reads
+		rm -r "${outdir}"/map_reads
 	fi
 	if [[ ! -d "${outdir}/unaligned" ]]; then
-		mkdir ${outdir}/unaligned
+		mkdir "${outdir}"/unaligned
 	fi
 	if [[ ! -d "${outdir}/aligned" ]]; then
-		mkdir ${outdir}/aligned
+		mkdir "${outdir}"/aligned
 	fi
-	mkdir ${outdir}/map_reads
+	mkdir "${outdir}"/map_reads
 
-	bwa index $ref_db
+	bwa index "$ref_db"
 
 	for i in $inds;
 	do
-		r1=`find $indir -maxdepth 1 -name ${i}.fq -or -name ${i}.fq.gz -or -name ${i}.fastq -or -name ${i}.fastq.gz`  #extension can be fq,fq.gz,fastq,fastq.gz
+		r1=$(find "$indir" -maxdepth 1 -name "${i}".fq -or -name "${i}".fq.gz -or -name "${i}".fastq -or -name "${i}".fastq.gz)  #extension can be fq,fq.gz,fastq,fastq.gz
 
 		if [[ ${#r1} -le 1 ]]; then
 			echo "Sample $i was not found"
@@ -373,21 +373,21 @@ if [[ "$map" == "yes" && "$type" == "SE" ]]; then
 
 		echo "Aligning $r1 to $ref_db using bwa" 					      #sequence name must match with popmap
 
-		bwa mem -t $np -k $bwa_k -A $bwa_A -B $bwa_B -O $bwa_O -R "@RG\tID:$i\tSM:$i\tPL:Illumina" $ref_db $r1 2> /dev/null |\
-		samtools view -h -b -u -@ $np |\
-		samtools sort -@ $np > ${outdir}/map_reads/${i}.bam
+		bwa mem -t "$np" -k "$bwa_k" -A "$bwa_A" -B "$bwa_B" -O "$bwa_O" -R "@RG\tID:$i\tSM:$i\tPL:Illumina" "$ref_db" "$r1" 2> /dev/null |\
+		samtools view -h -b -u -@ "$np" |\
+		samtools sort -@ "$np" > "${outdir}"/map_reads/"${i}".bam
 
-		samtools view -h -b -F 4 -@ $np ${outdir}/map_reads/${i}.bam > ${outdir}/aligned/${i}.bam
-		samtools index -@ $np ${outdir}/aligned/${i}.bam
+		samtools view -h -b -F 4 -@ "$np" "${outdir}"/map_reads/"${i}".bam > "${outdir}"/aligned/"${i}".bam
+		samtools index -@ "$np" "${outdir}"/aligned/"${i}".bam
 		#if bam is empty stop
 
-		samtools view -f 4 -@ $np ${outdir}/map_reads/${i}.bam |\
-		samtools sort -n -@ $np |\
-		samtools fastq -@ $np -0 ${outdir}/unaligned/${i}.fq.gz 2> /dev/null
+		samtools view -f 4 -@ "$np" "${outdir}"/map_reads/"${i}".bam |\
+		samtools sort -n -@ "$np" |\
+		samtools fastq -@ "$np" -0 "${outdir}"/unaligned/"${i}".fq.gz 2> /dev/null
 
-		samtools coverage ${outdir}/aligned/${i}.bam -m
+		samtools coverage "${outdir}"/aligned/"${i}".bam -m
 
-		samtools depth -d 0 -a ${outdir}/aligned/${i}.bam > ${outdir}/aligned/${i}.depth
+		samtools depth -d 0 -a "${outdir}"/aligned/"${i}".bam > "${outdir}"/aligned/"${i}".depth
 
 		echo "Per site read depth can be found in ${outdir}/aligned/${i}.depth"
 	done
@@ -400,30 +400,30 @@ if [[ "$map" == "yes" && "$type" == "SE" ]]; then
 		sort -n -k 2 |\
 		uniq |\
 		bedtools coverage -b ${outdir}/aligned/${i}.bam -a stdin -counts > ${outdir}/aligned/${i}.bed"
-	done | parallel -j $np
+	done | parallel -j "$np"
 
-	rm -r ${outdir}/map_reads
+	rm -r "${outdir}"/map_reads
 
 	echo "Depth of bed loci can be found in ${outdir}/aligned/SAMPLE_ID.bed"
 	echo "Reads that did not align to the reference are stored in ${outdir}/unaligned"
 
-	cd ${outdir}/aligned
+	cd "${outdir}"/aligned
 	for i in *depth
 	do
-		echo $i > temp_${i}
-		cut -f 3 $i >> temp_${i}
+		echo "$i" > temp_"${i}"
+		cut -f 3 "$i" >> temp_"${i}"
 	done
 	paste temp* > ind_depths.tsv
 	rm temp*
 	for i in $inds
 	do
-	 	echo ${i}.bam
-	 	samtools coverage ${i}.bam
+	 	echo "${i}".bam
+	 	samtools coverage "${i}".bam
 	done | grep -v ^# | perl -pe 's/.bam\n/\t/' > coverage_table.tsv
 
 
 	echo "#!"$( which Rscript )"
-	wd<-\"$( echo ${outdir}/aligned )\"
+	wd<-\"$( echo "${outdir}"/aligned )\"
 	setwd(wd)
 	x<-read.table(\"ind_depths.tsv\", sep=\"\t\", header=T)
 	col_names<-colnames(x)
@@ -441,32 +441,32 @@ if [[ "$map" == "yes" && "$type" == "SE" ]]; then
 	dev.off()
 	" > plot_depth.R
 
-	echo "Read depth of each site of samples can be checked by running "Rscript ${outdir}/aligned/plot_depth.R""
+	echo "Read depth of each site of samples can be checked by running Rscript ${outdir}/aligned/plot_depth.R"
 	echo "Coverage statistics can be found in ${outdir}/aligned/coverage_table.tsv"
 
-	cd $cdir
+	cd "$cdir"
 
 elif [[ "$map" == "yes" && "$type" == "PE" ]]; then
 	if [[ -d "${outdir}/map_reads" ]]; then
-		rm -r ${outdir}/map_reads
+		rm -r "${outdir}"/map_reads
 	fi
 	if [[ ! -d "${outdir}/unaligned" ]]; then
-		mkdir ${outdir}/unaligned
+		mkdir "${outdir}"/unaligned
 	fi
 	if [[ ! -d "${outdir}/aligned" ]]; then
-		mkdir ${outdir}/aligned
+		mkdir "${outdir}"/aligned
 	fi
 
-	mkdir ${outdir}/map_reads
+	mkdir "${outdir}"/map_reads
 
-	bwa index $ref_db
+	bwa index "$ref_db"
 
-	samtools faidx $ref_db
+	samtools faidx "$ref_db"
 
 	for i in $inds;
 	do
-		r1=`find $indir -maxdepth 1 -name ${i}.1.fq -or -name ${i}.1.fq.gz -or -name ${i}.1.fastq -or -name ${i}.1.fastq.gz`
-		r2=`find $indir -maxdepth 1 -name ${i}.2.fq -or -name ${i}.2.fq.gz -or -name ${i}.2.fastq -or -name ${i}.2.fastq.gz`
+		r1=$(find "$indir" -maxdepth 1 -name "${i}".1.fq -or -name "${i}".1.fq.gz -or -name "${i}".1.fastq -or -name "${i}".1.fastq.gz)
+		r2=$(find "$indir" -maxdepth 1 -name "${i}".2.fq -or -name "${i}".2.fq.gz -or -name "${i}".2.fastq -or -name "${i}".2.fastq.gz)
 
 		if [[ ${#r1} -le 1 ]]; then
 			echo "Sample $i was not found"
@@ -475,24 +475,24 @@ elif [[ "$map" == "yes" && "$type" == "PE" ]]; then
 
 		echo "Aligning ${i}.1 & ${i}.2 to $ref_db" 	       #sequence name must match with popmap, but must end with 1.fq.gz and 2.fq.gz
 
-		bwa mem -t $np -k $bwa_k -A $bwa_A -B $bwa_B -O $bwa_O -R "@RG\tID:$i\tSM:$i\tPL:Illumina" $ref_db $r1 $r2 2> /dev/null |\
-		samtools view -h -b -u -@ $np |\
-		samtools sort --threads $np > ${outdir}/map_reads/${i}.bam
+		bwa mem -t "$np" -k "$bwa_k" -A "$bwa_A" -B "$bwa_B" -O "$bwa_O" -R "@RG\tID:$i\tSM:$i\tPL:Illumina" "$ref_db" "$r1" "$r2" 2> /dev/null |\
+		samtools view -h -b -u -@ "$np" |\
+		samtools sort --threads "$np" > "${outdir}"/map_reads/"${i}".bam
 
-		samtools view -h -b -F 12 -@ $np ${outdir}/map_reads/${i}.bam > ${outdir}/aligned/${i}.bam
-		samtools index -@ $np ${outdir}/aligned/${i}.bam
+		samtools view -h -b -F 12 -@ "$np" "${outdir}"/map_reads/"${i}".bam > "${outdir}"/aligned/"${i}".bam
+		samtools index -@ "$np" "${outdir}"/aligned/"${i}".bam
 		#if bam is empty stop
 
-		samtools view -f 12 -@ np ${outdir}/map_reads/${i}.bam |\
-		samtools sort -n -@ $np |\
-		samtools fastq -@ $np -1 ${outdir}/unaligned/${i}.1.fq.gz -2 ${outdir}/unaligned/${i}.2.fq.gz 2> /dev/null
+		samtools view -f 12 -@ np "${outdir}"/map_reads/"${i}".bam |\
+		samtools sort -n -@ "$np" |\
+		samtools fastq -@ "$np" -1 "${outdir}"/unaligned/"${i}".1.fq.gz -2 "${outdir}"/unaligned/"${i}".2.fq.gz 2> /dev/null
 		#to emit singlets use samtools view -f 4 instead of -f 12
-		nsites=`samtools depth ${outdir}/aligned/${i}.bam | awk '$3 > 0' | wc -l`
+		nsites=$(samtools depth "${outdir}"/aligned/"${i}".bam | awk '$3 > 0' | wc -l)
 		echo "There are $nsites sites in the samples $i with read depth > 0"
 
-		samtools coverage ${outdir}/aligned/${i}.bam -m
+		samtools coverage "${outdir}"/aligned/"${i}".bam -m
 
-		samtools depth -d 0 -a ${outdir}/aligned/${i}.bam > ${outdir}/aligned/${i}.depth
+		samtools depth -d 0 -a "${outdir}"/aligned/"${i}".bam > "${outdir}"/aligned/"${i}".depth
 
 		echo "Per site read depth can be found in ${outdir}/aligned/${i}.depth"
 	done
@@ -507,30 +507,30 @@ elif [[ "$map" == "yes" && "$type" == "PE" ]]; then
 		sort -n -k 2 |\
 		uniq |\
 		bedtools coverage -b ${outdir}/aligned/${i}.bam -a stdin -counts > ${outdir}/aligned/${i}.bed"
-	done | parallel -j $np
+	done | parallel -j "$np"
 
-	rm -r ${outdir}/map_reads
+	rm -r "${outdir}"/map_reads
 
 	echo "Depth of bed loci can be found in ${outdir}/aligned/SAMPLE_ID.bed"
 	echo "Reads that did not align to the reference are stored in ${outdir}/unaligned"
 
-	cd ${outdir}/aligned
+	cd "${outdir}"/aligned
 	for i in *depth
 	do
-		echo $i > temp_${i}
-		cut -f 3 $i >> temp_${i}
+		echo "$i" > temp_"${i}"
+		cut -f 3 "$i" >> temp_"${i}"
 	done
 	paste temp* > ind_depths.tsv
 	rm temp*
 	for i in $inds
 	do
-	 	echo ${i}.bam
-	 	samtools coverage ${i}.bam
+	 	echo "${i}".bam
+	 	samtools coverage "${i}".bam
 	done | grep -v ^# | perl -pe 's/.bam\n/\t/' > coverage_table.tsv
 
 
 	echo "#!"$( which Rscript )"
-	wd<-\"$( echo ${outdir}/aligned )\"
+	wd<-\"$( echo "${outdir}"/aligned )\"
 	setwd(wd)
 	x<-read.table(\"ind_depths.tsv\", sep=\"\t\", header=T)
 	col_names<-colnames(x)
@@ -548,10 +548,10 @@ elif [[ "$map" == "yes" && "$type" == "PE" ]]; then
 	dev.off()
 	" > plot_depth.R
 
-	echo "Read depth of each site of samples can be checked by running "Rscript ${outdir}/aligned/plot_depth.R""
+	echo "Read depth of each site of samples can be checked by running Rscript ${outdir}/aligned/plot_depth.R"
 	echo "Coverage statistics can be found in ${outdir}/aligned/coverage_table.tsv"
 
-	cd $cdir
+	cd "$cdir"
 
 else
 
@@ -561,30 +561,30 @@ fi
 
 if [[ $call == "yes" ]]; then
 
-	grep -F -f <(awk -v x=$mbs -v y=$mrc '$6 > x && $5 > y' ${outdir}/aligned/coverage_table.tsv | cut -f 1) $popmap > ${outdir}/aligned/popmap_mbs
+	grep -F -f <(awk -v x="$mbs" -v y="$mrc" '$6 > x && $5 > y' "${outdir}"/aligned/coverage_table.tsv | cut -f 1) "$popmap" > "${outdir}"/aligned/popmap_mbs
 
 	popmap_mbs="${outdir}/aligned/popmap_mbs"
-	inds_mbs=`cut -f 1 $popmap_mbs`
+	inds_mbs=$(cut -f 1 "$popmap_mbs")
 	echo "The popmap reduced by -mbs and -mrc is:"
-	cat $popmap_mbs
+	cat "$popmap_mbs"
 
 	echo "Subsetting bed loci with a subsampling proportion of $sub_prop"
 	for i in $inds_mbs
 	do
-		awk -v mincov="$min_bed_cov" '$4 > mincov' ${outdir}/aligned/${i}.bed |\
+		awk -v mincov="$min_bed_cov" '$4 > mincov' "${outdir}"/aligned/"${i}".bed |\
 		bedtools merge |\
-		bedtools coverage -b ${outdir}/aligned/${i}.bam -a stdin -counts > ${outdir}/aligned/${i}_merge.bedcov
+		bedtools coverage -b "${outdir}"/aligned/"${i}".bam -a stdin -counts > "${outdir}"/aligned/"${i}"_merge.bedcov
 	done
 
-	cut -f 1-3 ${outdir}/aligned/*_merge.bedcov | bedtools sort | bedtools merge > ${outdir}/aligned/merged_alignments.bed
+	cut -f 1-3 "${outdir}"/aligned/*_merge.bedcov | bedtools sort | bedtools merge > "${outdir}"/aligned/merged_alignments.bed
 
 	echo "bed regions with a minimum bed coverage of $min_bed_cov are:"
-	cat ${outdir}/aligned/merged_alignments.bed
+	cat "${outdir}"/aligned/merged_alignments.bed
 
-	bedtools getfasta -fi $ref_db -fo ${outdir}/aligned/reference_subset.fa -bed ${outdir}/aligned/merged_alignments.bed
-	bwa index ${outdir}/aligned/reference_subset.fa
+	bedtools getfasta -fi "$ref_db" -fo "${outdir}"/aligned/reference_subset.fa -bed "${outdir}"/aligned/merged_alignments.bed
+	bwa index "${outdir}"/aligned/reference_subset.fa
 
-	proplarger=`awk -v x=$sub_prop 'BEGIN { print (x > 1.0) ? "yes" : "no" }'`
+	proplarger=$(awk -v x="$sub_prop" 'BEGIN { print (x > 1.0) ? "yes" : "no" }')
 
 	if [[ $proplarger == "yes" ]]; then
 		echo "Subsampling of reads can not be done with a proportion larger than 1.0"
@@ -594,64 +594,64 @@ if [[ $call == "yes" ]]; then
 	for i in $inds_mbs
 	do
 		#echo $i
-		cat ${outdir}/aligned/merged_alignments.bed |\
+		cat "${outdir}"/aligned/merged_alignments.bed |\
 		while read line
 		do 
-		coord=`echo $line | cut -f 1-3 -d " "`
+		coord=$(echo "$line" | cut -f 1-3 -d " ")
 		#echo $coord
-		samtools view -h -b -L <(echo $coord) -s $sub_prop ${outdir}/aligned/${i}.bam > "${outdir}/aligned/ssmp_${i}_${sub_prop}_${coord}.bam"
+		samtools view -h -b -L <(echo "$coord") -s "$sub_prop" "${outdir}"/aligned/"${i}".bam > "${outdir}/aligned/ssmp_${i}_${sub_prop}_${coord}.bam"
 		done
 
-		samtools merge -b <(ls ${outdir}/aligned/ssmp_${i}*.bam) -f ${outdir}/aligned/${i}_subsampled.bam
+		samtools merge -b <(ls "${outdir}"/aligned/ssmp_"${i}"*.bam) -f "${outdir}"/aligned/"${i}"_subsampled.bam
 
-		rm ${outdir}/aligned/ssmp_${i}_*.bam
+		rm "${outdir}"/aligned/ssmp_"${i}"_*.bam
 
-		samtools index -@ $np ${outdir}/aligned/${i}_subsampled.bam
+		samtools index -@ "$np" "${outdir}"/aligned/"${i}"_subsampled.bam
 	done
 
 	for i in $inds_mbs
 	do
-		bwa mem -t $np -R "@RG\tID:$i\tSM:$i\tPL:Illumina" ${outdir}/aligned/reference_subset.fa <(samtools bam2fq -@ $np ${outdir}/aligned/${i}_subsampled.bam) 2> /dev/null | samtools view -h -b -@ $np | samtools sort -@ $np > ${outdir}/aligned/${i}_subset.bam
-		samtools index -@ $np ${outdir}/aligned/${i}_subset.bam
-		bedtools bamtobed -i ${outdir}/aligned/${i}_subset.bam | bedtools merge > ${outdir}/aligned/${i}_subset.bed
+		bwa mem -t "$np" -R "@RG\tID:$i\tSM:$i\tPL:Illumina" "${outdir}"/aligned/reference_subset.fa <(samtools bam2fq -@ "$np" "${outdir}"/aligned/"${i}"_subsampled.bam) 2> /dev/null | samtools view -h -b -@ "$np" | samtools sort -@ "$np" > "${outdir}"/aligned/"${i}"_subset.bam
+		samtools index -@ "$np" "${outdir}"/aligned/"${i}"_subset.bam
+		bedtools bamtobed -i "${outdir}"/aligned/"${i}"_subset.bam | bedtools merge > "${outdir}"/aligned/"${i}"_subset.bed
 	done
 
-	samtools faidx ${outdir}/aligned/reference_subset.fa
-	awk 'BEGIN {FS="\t"}; {print $1 FS "0" FS $2}' ${outdir}/aligned/reference_subset.fa.fai > ${outdir}/aligned/subset_alignments.bed
+	samtools faidx "${outdir}"/aligned/reference_subset.fa
+	awk 'BEGIN {FS="\t"}; {print $1 FS "0" FS $2}' "${outdir}"/aligned/reference_subset.fa.fai > "${outdir}"/aligned/subset_alignments.bed
 
-	rm ${outdir}/aligned/*subsampled.bam
-	rm ${outdir}/aligned/*subsampled.bam.bai
+	rm "${outdir}"/aligned/*subsampled.bam
+	rm "${outdir}"/aligned/*subsampled.bam.bai
 
-	ls ${outdir}/aligned/*_subset.bam | grep "$inds_mbs" > ${outdir}/aligned/bamlist
+	ls "${outdir}"/aligned/*_subset.bam | grep "$inds_mbs" > "${outdir}"/aligned/bamlist
 
 	if [[ ! -d ${outdir}/aligned/bed_loci ]]; then
-		mkdir ${outdir}/aligned/bed_loci
+		mkdir "${outdir}"/aligned/bed_loci
 	elif [[ -d ${outdir}/aligned/bed_loci ]]; then
-		rm ${outdir}/aligned/bed_loci/*
+		rm "${outdir}"/aligned/bed_loci/*
 	fi
 
-	cat ${outdir}/aligned/subset_alignments.bed |\
+	cat "${outdir}"/aligned/subset_alignments.bed |\
 	while read line
 	do 
 		echo "$line" > "${outdir}/aligned/bed_loci/loc_${line}"
 	done
 
-	cd ${outdir}/aligned/bed_loci
+	cd "${outdir}"/aligned/bed_loci
 
 	for i in loc*
 	do
-		ii=`echo "$i" | sed -e 's/..:/_/' -e 's/\t/_/' -e 's/\t/-/'`
+		ii=$(echo "$i" | sed -e 's/..:/_/' -e 's/\t/_/' -e 's/\t/-/')
 		mv "$i" "$ii"
 	done
 	
-	loc=`ls`
+	loc=$(ls)
 	
-	cd $cdir
+	cd "$cdir"
 
 	if [[ ! -d ${outdir}/aligned/vcf_loci ]]; then
-		mkdir ${outdir}/aligned/vcf_loci
+		mkdir "${outdir}"/aligned/vcf_loci
 	elif [[ -d ${outdir}/aligned/vcf_loci ]]; then
-		rm ${outdir}/aligned/vcf_loci/*
+		rm "${outdir}"/aligned/vcf_loci/*
 	fi
 
 	echo "Calling haplotypes with freebayes"
@@ -659,16 +659,16 @@ if [[ $call == "yes" ]]; then
 	for i in $loc
 	do
 		echo "freebayes -f ${outdir}/aligned/reference_subset.fa -L ${outdir}/aligned/bamlist --ploidy $ploidy -q $minqual -Q $mismatchqual -m $mapq --min-coverage $fb_min_cov -w -j -V -E -1 -n $nbest -F $altfrac --populations $popmap_mbs --report-monomorphic -t ${outdir}/aligned/bed_loci/${i} > ${outdir}/aligned/vcf_loci/${i}.vcf"
-	done | parallel -j $np
+	done | parallel -j "$np"
 
 	echo "Filtering for missingness and minimum locus length"
 
-	ref_id=`head -n 1 $ref_db | sed 's/>//' | cut -f 1 -d " "`
-	cd ${outdir}/aligned/vcf_loci
+	ref_id=$(head -n 1 "$ref_db" | sed 's/>//' | cut -f 1 -d " ")
+	cd "${outdir}"/aligned/vcf_loci
 
-	ncomment=`for i in *.vcf; do grep "^#" $i | wc -l; done | sort | head -n 1`
+	ncomment=$(for i in *.vcf; do grep "^#" "$i" | wc -l; done | sort | head -n 1)
 
-	find ./ -name "*.vcf" -type f -exec awk -v x=$ncomment 'NR==x+1{exit 1}' {} \; -exec echo rm {} \; > rmvcf
+	find ./ -name "*.vcf" -type f -exec awk -v x="$ncomment" 'NR==x+1{exit 1}' {} \; -exec echo rm {} \; > rmvcf
 
 	if [[ $(wc -l <rmvcf) -ge 1 ]]; then 
 		sh rmvcf &> /dev/null
@@ -677,20 +677,20 @@ if [[ $call == "yes" ]]; then
 		rm rmvcf
 	fi
 
-	vcfloc=`ls *.vcf | sed 's/.vcf//'`
+	vcfloc=$(ls *.vcf | sed 's/.vcf//')
 
 	for i in $vcfloc
 	do
 		#echo $i
-		vcftools --vcf ${i}.vcf --max-missing $vcfmiss --recode --out $i 2> /dev/null
+		vcftools --vcf "${i}".vcf --max-missing "$vcfmiss" --recode --out "$i" 2> /dev/null
 	done
 
-	nrecode_comment=`for i in *recode.vcf
+	nrecode_comment=$(for i in *recode.vcf
 	do
-		grep "^#" $i | wc -l
-	done | sort | head -n 1`
+		grep "^#" "$i" | wc -l
+	done | sort | head -n 1)
 
-	find ./ -name "*.recode.vcf" -type f -exec awk -v x=$nrecode_comment -v y=$minlen 'NR==x+y{exit 1}' {} \; -exec echo rm {} \; > rmrecodevcf
+	find ./ -name "*.recode.vcf" -type f -exec awk -v x="$nrecode_comment" -v y="$minlen" 'NR==x+y{exit 1}' {} \; -exec echo rm {} \; > rmrecodevcf
 
 	if [[ $(wc -l <rmrecodevcf) -ge 1 ]]; then 
 		sh rmrecodevcf &> /dev/null
@@ -700,7 +700,7 @@ if [[ $call == "yes" ]]; then
 	fi
 
 	touch temp.recode.vcf
-	nrecodeloc=`ls *recode.vcf | wc -l`
+	nrecodeloc=$(ls *recode.vcf | wc -l)
 
 	if [[ $nrecodeloc -le 1 ]]; then
 		echo "############################################################################################################################################"
@@ -715,40 +715,40 @@ if [[ $call == "yes" ]]; then
 	fi
 
 	if [[ ! -d ${outdir}/fasta_loci ]]; then
-		mkdir ${outdir}/fasta_loci
+		mkdir "${outdir}"/fasta_loci
 	elif [[ -d ${outdir}/fasta_loci ]]; then
-		rm ${outdir}/fasta_loci/*
+		rm "${outdir}"/fasta_loci/*
 	fi
 
 	echo "Exporting sequnces of bed loci to fasta"
 
-	recodeloc=`ls *.recode.vcf | sed 's/.recode.vcf//'`
+	recodeloc=$(ls *.recode.vcf | sed 's/.recode.vcf//')
 	for i in $recodeloc
 	do
-		vcf2fasta -f ${outdir}/aligned/reference_subset.fa -p $i -P 1 -n N ${outdir}/aligned/vcf_loci/${i}.recode.vcf
-		cat ${i}*.fa | perl -pe "s/_"${ref_id}".*//" | awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' > ${outdir}/fasta_loci/unaligned_${i}.fa
+		vcf2fasta -f "${outdir}"/aligned/reference_subset.fa -p "$i" -P 1 -n N "${outdir}"/aligned/vcf_loci/"${i}".recode.vcf
+		cat "${i}"*.fa | perl -pe "s/_""${ref_id}"".*//" | awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' > "${outdir}"/fasta_loci/unaligned_"${i}".fa
 
 		for l in $inds_mbs
 		do
-		grep -v "^#" ${outdir}/aligned/vcf_loci/${i}.recode.vcf | cut -f 2 | sed -n '1p;$p' | perl -pe 's/\n/\t/' 
+		grep -v "^#" "${outdir}"/aligned/vcf_loci/"${i}".recode.vcf | cut -f 2 | sed -n '1p;$p' | perl -pe 's/\n/\t/' 
 		echo
-		done | sed 's/1\t/0\t/' > ${outdir}/aligned/vcf_loci/${i}.range
+		done | sed 's/1\t/0\t/' > "${outdir}"/aligned/vcf_loci/"${i}".range
 
-		paste <(echo $inds_mbs | perl -pe 's/ /\n/g') <(cat ${i}.range) | sed -e 's/\t/:/' -e 's/\t/-/' -e 's/\t//'  > ${outdir}/fasta_loci/${i}.bedlocus
+		paste <(echo "$inds_mbs" | perl -pe 's/ /\n/g') <(cat "${i}".range) | sed -e 's/\t/:/' -e 's/\t/-/' -e 's/\t//'  > "${outdir}"/fasta_loci/"${i}".bedlocus
 	done
 
 	rm *range
 	rm *fa
 
-	cd ${outdir}/fasta_loci
+	cd "${outdir}"/fasta_loci
 	for i in $recodeloc
 	do
-		muscle -in unaligned_${i}.fa -out break_${i}.fa &> /dev/null
-		awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' break_${i}.fa > miss_${i}.fa
-		samtools faidx miss_${i}.fa -r ${i}.bedlocus -o sidx_${i}.fa 2> /dev/null
-		awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' sidx_${i}.fa > ${i}.fa
-		sed -i 's/:.*//' ${i}.fa
-		sed -i -e '/^[^>]/s/N/-/g' ${i}.fa #missing is coded as "-"
+		muscle -in unaligned_"${i}".fa -out break_"${i}".fa &> /dev/null
+		awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' break_"${i}".fa > miss_"${i}".fa
+		samtools faidx miss_"${i}".fa -r "${i}".bedlocus -o sidx_"${i}".fa 2> /dev/null
+		awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' sidx_"${i}".fa > "${i}".fa
+		sed -i 's/:.*//' "${i}".fa
+		sed -i -e '/^[^>]/s/N/-/g' "${i}".fa #missing is coded as "-"
 	done
 	rm unaligned_*.fa
 	rm break_*.fa
@@ -759,11 +759,11 @@ if [[ $call == "yes" ]]; then
 
 	AMAS.py summary -i loc*fa -f fasta -d dna
 
-	cd $outdir
+	cd "$outdir"
 	AMAS.py concat -i fasta_loci/loc*fa -f fasta -d dna -t concat_loci.fa -p concat_loci.parts
 	sed -i 's/^/DNA,/' concat_loci.parts
 
-	cd $cdir
+	cd "$cdir"
 
 	echo "Sequence of each locus can be found in ${outdir}/fasta_loci"
 	echo "Concatenated sequence of all loci is written to ${outdir}/concat_loci.fa"
