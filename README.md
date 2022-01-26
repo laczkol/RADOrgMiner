@@ -50,7 +50,16 @@ Downloading the RADOrgMiner.sh script or cloning this repository to the desired 
 
   If you use these tools within our pipeline, please do not forget to credit the authors of the above-mentioned softwares by citing them.
 
-  After cloning the repository, dependencies can be installed using the `conda` package manager by creating an environment specified in the `yaml` file found in the RADOrgMiner directory.
+  After cloning the repository, dependencies can be installed using the `conda` package manager by creating an environment specified in the `yaml` file found in the RADOrgMiner directory. To create an environment, after navigating into the cloned directory the following should be typed into the terminal:
+
+  ````
+  conda create --name radorgminer-env --file radorgminer-env.yaml 
+  ````
+After that, the newly created environment that has all dependencies installed can be activated by typing the following in the terminal:
+
+````
+conda activate radorgminer-env
+````
 
 ## Details and example
 
