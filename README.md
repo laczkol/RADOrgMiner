@@ -137,9 +137,12 @@ The second main step of the pipeline is the calling of haplotypes that the follo
         -call --call-haplotypes
                                                         Valid options are yes or no (without quotes). Indicates if haplotypes should be extracted to vcf and fasta format. The fasta format contains the entire sequences of the loci. It is suggested to first align reads to the reference, then investigate the read depth of loci. The bed files produced after alignment also report the bed coverage. 
 
-        -mbc --min-bed-coverage 
-                                                        Minimal coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, it will be a subject of analysis in all the samples. As organellar DNA can be overrepresented, it can be a really high number (e.g. 500). When trying different thresholds it is not needed to align the reads to the reference again, only the genotype call step should be redone. [default 3]  
+        -minbc --min-bed-coverage
+                                                        Minimum coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, the locus will not be included in the analysis. As organellar DNA can be overrepresented, it can be a really high number (e.g. 500). When trying different thresholds it is not needed to align the reads to the reference again, only the genotype call step should be redone. [default 3]
 
+        -maxbc --max-bed-coverage
+                                                        Maximum coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, the locus will not be included in the analysis. If the read depth of known NUMTs or NUPTs is known to be high, it is recommended to use this parameter to exclude them. [default 1000000]
+ 
         -sp --subsampling-prop
                                                         Float value between 0 and 1. To use less memory when calling haplotypes, each bed locus can be downsampled using samtools view by this proportion. 0.1 means: use 10% percent of all the reads found in a bed locus. The effect of downsampling is not tested properly, so use at your own risk and double check the results. [default 1.0]
 
@@ -150,13 +153,13 @@ The second main step of the pipeline is the calling of haplotypes that the follo
                                                         Defines the minimum number of reads needed in a sample to be included in the genotype calling. [default 1]
 ````
 
-The calling of haplotypes is turned off by default. To turn it on `-call yes` should be specified. The amount of loci is controlled by the minimal coverage of a locus (`-mbc` or `--min-bed-coverage`). If any locus of any individual included in the pipeline has higher coverage than this value, the locus will be included in the haplotype calling for all samples. Alignment intervals of each sample are merged at this step to get the total length of overlapping loci in the intervals used for the haplotype calling step. Theoretically, organellar reads can have a much higher read depth than the nuclear loci; thus, the value of `-mbc` may be really high. It is suggested to check the read depth distribution of samples after aligning the reads to the reference. The default value is 3, which probably will result in a scattered final dataset.
+The calling of haplotypes is turned off by default. To turn it on `-call yes` should be specified. The amount of loci is controlled by the minimal coverage of a locus (`-minbc` or `--min-bed-coverage`). If any locus of any individual included in the pipeline has higher coverage than this value, the locus will be included in the haplotype calling for all samples. Alignment intervals of each sample are merged at this step to get the total length of overlapping loci in the intervals used for the haplotype calling step. Theoretically, organellar reads can have a much higher read depth than the nuclear loci; thus, the value of `-minbc` may be really high. It is suggested to check the read depth distribution of samples after aligning the reads to the reference. The default value is 3, which probably will result in a scattered final dataset. If the read depth of some (known) NUMTs or NUPTs is higher than the read depth of the organellar loci, these nuclear regions can be excluded by applying a threshold using `-maxbc`.
 
 The number of samples can be narrowed down by specifying the minimum number of bases sequenced in any individual (`-mbs` or `--min-bases-sequenced`) and the minimal read count for any sample (`-mrc` or `--min-read-count`). Samples that fail these criteria will be omitted from the haplotype calling. The default for the minimum number of bases is 0, and for the minimum number of reads is 1, which parameters will only exclude samples with zero reads aligned to the reference.
 
 The effect of setting different subsampling proportions (`-sp`) is currently not extensively tested. If subsampling is turned on, the given proportion of reads of each loci will be downsampled randomly for the haplotype calling. If you set this, please try more different values to check for consistency and double-check the results to ensure no real variability is lost. Also, pay attention to not to downsample the coverage lower than the minimal read depth that `freebayes` even considers analyzing. This parameter is here for testing reasons only.
 
-The pipeline will carry out a subsetting of the dataset, but it does not involve the downsampling of read depth, just the exclusion of alignments outside the alignment intervals (loci) set by `-mbc`. By default, read depth of the desired loci will be left unchanged. This is done for an easier handling of loci in later steps.
+The pipeline will carry out a subsetting of the dataset, but it does not involve the downsampling of read depth, just the exclusion of alignments outside the alignment intervals (loci) set by `-minbc`. By default, read depth of the desired loci will be left unchanged. This is done for an easier handling of loci in later steps.
 
 The haplotype calling by freebayes can be (similarly to the alignment step) fine-tuned by setting the following parameters:
 
@@ -256,12 +259,12 @@ As the masking of the reference was requested, the pipeline should have created 
 
 The alignments subject to genotype the loci of organellar origin can be found in the directory `aligned`. Alignments are stored here as `bam` files together with basic statistics about the alignment process. The read depth of each genomic position of each sample is exported to a file with the name of the sample with the extension `depth`. This information is summarized in the file `ind_depths.tsv`. At the end of the alignment step an R script is generated to visualize the read depth distribution of each sample, and the mean read depth of genomic positions across the dataset. The plots showing this information can be exported to `png` by running `Rscript /working_directory/aligned/plot_depth.R`, as suggested by the message output on the `stdout`. 
 
-These plots should be checked to properly set the `-mbc` value. It should be noticed that not all loci overlap between the two species analyzed, resulting in potential missing data in the final dataset. This is expected for RADseq, as, if the cut site of the restriction enzyme is a subject of mutations, the experiment will result in allele dropout. Another table worth checking is the `coverage_table.tsv` that contains the statistics produced by `samtools coverage` for each individual.
+These plots should be checked to properly set the `-minbc` value. It should be noticed that not all loci overlap between the two species analyzed, resulting in potential missing data in the final dataset. This is expected for RADseq, as, if the cut site of the restriction enzyme is a subject of mutations, the experiment will result in allele dropout. Another table worth checking is the `coverage_table.tsv` that contains the statistics produced by `samtools coverage` for each individual.
 
-The second step of the genotyping is the calling of haplotypes. After checking of the statistics of the alignments, an `-mbc` value of 15 seems to retrieve the sequence of all loci. The haplotype calling can be run with the following command:
+The second step of the genotyping is the calling of haplotypes. After checking of the statistics of the alignments, an `-minbc` value of 15 seems to retrieve the sequence of all loci. The haplotype calling can be run with the following command:
 
 ````bash
-RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align no -call yes -mbc 15 -np 6 -popmap popmap -type PE 
+RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align no -call yes -minbc 15 -np 6 -popmap popmap -type PE 
 ````
 
 If you specify an output directory, please use the same for both the alignment and haplotype call steps. The script assumes that the directory `aligned`, that contains the files needed for haplotype calling, is located **within** the output directory. Using six CPU cores, haplotype calling of this dataset should take approximately 40 seconds with a maximal memory usage of 47 Mb. 

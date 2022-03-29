@@ -1,7 +1,13 @@
 #!/bin/bash
 set -euo errexit -euo pipefail -euo nounset
 
-echo "This is RADOrgMiner (RADseq Organellar DNA Miner and Genotyper) v0.8"
+echo "
+ ____      _    ____   ___            __  __ _
+|  _ \    / \  |  _ \ / _ \ _ __ __ _|  \/  (_)_ __   ___ _ __
+| |_) |  / _ \ | | | | | | | '__/ _\`| |\/| | | '_ \ / _ \ '__|
+|  _ <  / ___ \| |_| | |_| | | | (_| | |  | | | | | |  __/ |
+|_| \_\/_/   \_\____/ \___/|_|  \__, |_|  |_|_|_| |_|\___|_|
+                                |___/                 v.0.9"
 
 echo "Run started at $(date)"
 
@@ -20,6 +26,7 @@ bwa_A=1
 bwa_B=4
 bwa_O=6
 min_bed_cov=3
+max_bed_cov=1000000
 sub_prop=1.0
 ploidy=1
 minqual=20
@@ -88,8 +95,12 @@ while [[ "$#" -gt 0 ]];
 			call=$2
 			shift
 			;;
-		-mbc|--min-bed-coverage)
+		-minbc|--min-bed-coverage)
 			min_bed_cov=$2
+			shift
+			;;
+		-maxbc|--max-bed-coverage)
+			max_bed_cov=$2
 			shift
 			;;
 		-sp|--subsampling-prop)
@@ -191,8 +202,11 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	-call --call-haplotypes
 							Valid options are "yes" or "no" (without quotes). Indicates if haplotypes should be extracted to vcf and fasta format. The fasta format contains the entire sequences of the loci. It is suggested to first align reads to the reference, then investigate the read depth of loci. The bed files produced after alignment also report the bed coverage. 
 
-	-mbc --min-bed-coverage
-							Minimal coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, it will be a subject of analysis in all the samples. As organellar DNA can be overrepresented, it can be a really high number (e.g. 500). When trying different thresholds it is not needed to align the reads to the reference again, only the genotype call step should be redone. [default 3]  
+	-minbc --min-bed-coverage
+							Minimum coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, the locus will not be included in the analysis. As organellar DNA can be overrepresented, it can be a really high number (e.g. 500). When trying different thresholds it is not needed to align the reads to the reference again, only the genotype call step should be redone. [default 3]
+
+	-maxbc --max-bed-coverage
+							Maximum coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, the locus will not be included in the analysis. If the read depth of known NUMTs or NUPTs is known to be high, it is recommended to use this parameter to exclude them. [default 1000000]
 
 	-sp --subsampling-prop
 							Float value between 0 and 1. To use less memory when calling haplotypes, each bed locus can be downsampled using samtools view by this proportion. 0.1 means: use 10% percent of all the reads found in a bed locus. The effect of downsampling is not tested properly, so use at your own risk and double check the results. [default 1.0]
@@ -244,19 +258,32 @@ do
 	if which "$i"; then
 		echo "$i" found
 	else
-		echo "$i" is not found
+		echo "####################################################################"
+		echo "$i" is not found.
 		echo "Please install $i or specify it in the '$PATH'"
-		echo "The pipeline will continue now, but unexpected behaviour may follow"
+		echo "The pipeline will continue now, but unexpected behaviour may follow."
+		echo "####################################################################"
 	fi
 done
 
 if [[ ${#ref} -le 1 ]]; then
-	echo "Please specify reference genome"
+	echo "################################"
+	echo "Please specify reference genome."
+	echo "################################"
 	exit 1
 fi
 
 if [[ ${#popmap} -le 1 ]]; then
-	echo "Please specify popmap"
+	echo "#######################"
+	echo "Please specify a population map to run RADOrgMiner."
+	echo "#######################"
+	exit 1
+fi
+
+if [[ $min_bed_cov -ge $max_bed_cov ]]; then
+	echo "##########################################################################################"
+	echo "Maximum read depth is set higher than the minimum read depth. Please check the parameters."
+	echo "##########################################################################################"
 	exit 1
 fi
 
@@ -571,14 +598,14 @@ if [[ $call == "yes" ]]; then
 	echo "Subsetting bed loci with a subsampling proportion of $sub_prop"
 	for i in $inds_mbs
 	do
-		awk -v mincov="$min_bed_cov" '$4 > mincov' "${outdir}"/aligned/"${i}".bed |\
+		awk -v mincov="$min_bed_cov" -v maxcov="$max_bed_cov" '$4 > mincov && $4 < maxcov' "${outdir}"/aligned/"${i}".bed |\
 		bedtools merge |\
 		bedtools coverage -b "${outdir}"/aligned/"${i}".bam -a stdin -counts > "${outdir}"/aligned/"${i}"_merge.bedcov
 	done
 
 	cut -f 1-3 "${outdir}"/aligned/*_merge.bedcov | bedtools sort | bedtools merge > "${outdir}"/aligned/merged_alignments.bed
 
-	echo "bed regions with a minimum bed coverage of $min_bed_cov are:"
+	echo "bed regions with a minimum bed coverage of $min_bed_cov and maximum bed coverage of $max_bed_cov are:"
 	cat "${outdir}"/aligned/merged_alignments.bed
 
 	bedtools getfasta -fi "$ref_db" -fo "${outdir}"/aligned/reference_subset.fa -bed "${outdir}"/aligned/merged_alignments.bed
