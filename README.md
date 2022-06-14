@@ -60,7 +60,7 @@ After that, the newly created environment that has all dependencies installed ca
 ````
 conda activate radorgminer-env
 ````
-R v3.6 and Rscript included in the provided .yaml file might not be compatible with the latest GNU/Linux distributions. If you experience difficulties when plotting read depth with as the pipeline suggests, please check if R works correctly and is added to the $PATH. A similar issue sometimes can be observed with samtools. Please, make sure that typing samtools to your terminal does not throw any errors. In the provided .yaml file samtools 1.15.1 is included and is recommended to run the pipeline, but any version of this software above v1.10 should work correctly.
+`R` v3.6 and `Rscript` included in the provided `.yaml` file might not be compatible with the latest GNU/Linux distributions. If you experience difficulties when plotting read depth with as the pipeline suggests, please check if R works correctly and is added to the `$PATH`. A similar issue sometimes can be observed with `samtools`. Please, make sure that typing samtools to your terminal does not throw any errors. In the provided `.yaml` file `samtools 1.15.1` is included and is recommended to run the pipeline, but any version of this software above v1.10 should work correctly.
 
 ## Details and example
 
