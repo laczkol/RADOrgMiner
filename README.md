@@ -4,7 +4,7 @@
 
 If you find this pipeline useful, please do not forget to credit our work by citing this paper:
 
-Levente Laczkó, Sándor Jordán, Gábor Sramkó. A magnet to draw a bright  needle out from the haystack -- RADOrgMiner, an automated pipeline to  genotype organellar reads from RADseq data. *Authorea preprint.* September 25, 2021.DOI: [10.22541/au.163255933.36686159/v1](https://doi.org/10.22541/au.163255933.36686159/v1)
+Laczkó, L., Jordán, S., & Sramkó, G. (2022). The RadOrgMiner pipeline: Automated genotyping of organellar loci from RADseq data. *Methods in Ecology and Evolution*, 2041-210X.13937. [https://doi.org/10.1111/2041-210X.13937](https://doi.org/10.1111/2041-210X.13937)
 
 ## Overview
 
