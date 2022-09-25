@@ -62,7 +62,7 @@ conda activate radorgminer-env
 ````
 `R` v3.6 and `Rscript` included in the provided `.yaml` file might not be compatible with the latest GNU/Linux distributions. If you experience difficulties when plotting read depth with as the pipeline suggests, please check if R works correctly and is added to the `$PATH`. A similar issue sometimes can be observed with `samtools`. Please, make sure that typing samtools to your terminal does not throw any errors. In the provided `.yaml` file `samtools 1.15.1` is included and is recommended to run the pipeline, but any version of this software above v1.10 should work correctly.
 
-We also provide an [Apptainer](https://github.com/apptainer/apptainer) (formerly [Singularity](https://github.com/apptainer/singularity)) container (`radorgminer.sif`) that contains all dependencies preinstalled and only requires Apptainer to run the pipeline.
+We also provide an [Apptainer](https://github.com/apptainer/apptainer) (formerly [Singularity](https://github.com/apptainer/singularity)) container (`radorgminer.sif`) that contains all dependencies preinstalled and only requires Apptainer to run the pipeline. For the advantages of using such a software container see [Kurtzer et al., 2017](https://doi.org/10.1371/journal.pone.0177459).
 
 ## Details and example
 
