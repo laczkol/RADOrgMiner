@@ -62,6 +62,8 @@ conda activate radorgminer-env
 ````
 `R` v3.6 and `Rscript` included in the provided `.yaml` file might not be compatible with the latest GNU/Linux distributions. If you experience difficulties when plotting read depth with as the pipeline suggests, please check if R works correctly and is added to the `$PATH`. A similar issue sometimes can be observed with `samtools`. Please, make sure that typing samtools to your terminal does not throw any errors. In the provided `.yaml` file `samtools 1.15.1` is included and is recommended to run the pipeline, but any version of this software above v1.10 should work correctly.
 
+We also provide an [Apptainer](https://github.com/apptainer/apptainer) (formerly [Singularity](https://github.com/apptainer/singularity)) container (`radorgminer.sif`) that contains all dependencies preinstalled and only requires Apptainer to run the pipeline.
+
 ## Details and example
 
 The help menu of RADOrgMiner.sh contains all the parameters necessary to set to run the pipeline. It can be invoked by just typing `RADOrgMiner.sh` in the terminal without specifying any parameters.
@@ -236,6 +238,10 @@ To test the basic functionality of the pipeline, these files can be found in the
 RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align yes -call no -np 6 -popmap popmap -type PE
 ````
 
+When using the Apptainer container, the `RADOrgMiner.sh` should be invoked the following:
+
+`apptainer exec /PATH/TO/radorgminer.sif RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align yes -call no -np 6 -popmap popmap -type PE `
+
 This command using six CPU cores (i7-4910MQ) should finish under six seconds with a maximum memory usage of 58 Mb. Parameters set for the run, the stage of analysis, and the alignment statistics created by `samtools coverage -m` are shown the `stdout`, which can be redirected to a text file to store it as a log. The alignment statistics for the first sample file in the example dataset should look like the following:
 
 ````
@@ -258,7 +264,7 @@ Per site read depth can be found in working_directory/aligned/lyr_KU764768_TGCA.
 
 As the masking of the reference was requested, the pipeline should have created the `blastn` database and the output of self-blasting (`NC_000932_selfblast.fmt6`  in this example) in the output directory. The range, that was masked prior the short read alignment, can be checked by opening the file ending with `IR_boundary` (`NC_000932_IR_boundary` in this example, it should be 128215-154478). The index file used for `bwa mem` are also stored here. The directory `unaligned` within the output directory contains all read pairs as `fq.gz` files that did not align to the reference genome. Using real data these can be processed further with any pipeline designed to process raw RADseq reads. In this example all `fq.gz` files stored in this directory should contain identical (n=500) reads. These are added to the example only to illustrate how the pipeline works. 
 
-The alignments subject to genotype the loci of organellar origin can be found in the directory `aligned`. Alignments are stored here as `bam` files together with basic statistics about the alignment process. The read depth of each genomic position of each sample is exported to a file with the name of the sample with the extension `depth`. This information is summarized in the file `ind_depths.tsv`. At the end of the alignment step an R script is generated to visualize the read depth distribution of each sample, and the mean read depth of genomic positions across the dataset. The plots showing this information can be exported to `png` by running `Rscript /working_directory/aligned/plot_depth.R`, as suggested by the message output on the `stdout`. 
+The alignments subject to genotype the loci of organellar origin can be found in the directory `aligned`. Alignments are stored here as `bam` files together with basic statistics about the alignment process. The read depth of each genomic position of each sample is exported to a file with the name of the sample with the extension `depth`. This information is summarized in the file `ind_depths.tsv`. At the end of the alignment step an R script is generated to visualize the read depth distribution of each sample, and the mean read depth of genomic positions across the dataset. The plots showing this information can be exported to `png` by running `Rscript /working_directory/aligned/plot_depth.R`, as suggested by the message output on the `stdout`. (If Rscript is not installed and you run Rscript with Apptainer: `apptainer exec /PATH/TO/radorgminer.sif Rscript /working_directory/aligned/plot_depth.R`) 
 
 These plots should be checked to properly set the `-minbc` value. It should be noticed that not all loci overlap between the two species analyzed, resulting in potential missing data in the final dataset. This is expected for RADseq, as, if the cut site of the restriction enzyme is a subject of mutations, the experiment will result in allele dropout. Another table worth checking is the `coverage_table.tsv` that contains the statistics produced by `samtools coverage` for each individual.
 
@@ -267,6 +273,10 @@ The second step of the genotyping is the calling of haplotypes. After checking o
 ````bash
 RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align no -call yes -minbc 15 -np 6 -popmap popmap -type PE 
 ````
+
+Using Apptainer the following should be copied to the terminal:
+
+`apptainer exec /PATH/TO/radorgminer.sif RADOrgMiner.sh --mask-reference yes -r NC_000932.fa -align no -call yes -minbc 15 -np 6 -popmap popmap -type PE `
 
 If you specify an output directory, please use the same for both the alignment and haplotype call steps. The script assumes that the directory `aligned`, that contains the files needed for haplotype calling, is located **within** the output directory. Using six CPU cores, haplotype calling of this dataset should take approximately 40 seconds with a maximal memory usage of 47 Mb. 
 
