@@ -146,8 +146,8 @@ The second main step of the pipeline is the calling of haplotypes that the follo
         -maxbc --max-bed-coverage
                                                         Maximum coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, the locus will not be included in the variant call. If the read depth of NUMTs or NUPTs is known to be high, it is recommended to use this parameter to exclude them. [default 1000000]
  
-        -sp --subsampling-prop
-                                                        Float value between 0 and 1. To use less memory when calling haplotypes, each bed locus can be downsampled using samtools view by this proportion. 0.1 means: use 10% percent of all the reads found in a bed locus. The effect of downsampling is not tested properly, so use at your own risk and double check the results. [default 1.0]
+        -sc --subsampling-count
+                                                        Integer. To use less memory when calling haplotypes, each bed locus can be downsampled to this read count. [default 1000]
 
         -mbs --min-bases-sequenced
                                                         Defines the minimum number of bases sequenced in a sample to be included in the genotype calling. [default 0]
@@ -160,7 +160,7 @@ The calling of haplotypes is turned off by default. To turn it on `-call yes` sh
 
 The number of samples can be narrowed down by specifying the minimum number of bases sequenced in any individual (`-mbs` or `--min-bases-sequenced`) and the minimal read count for any sample (`-mrc` or `--min-read-count`). Samples that fail these criteria will be omitted from the haplotype calling. The default for the minimum number of bases is 0, and for the minimum number of reads is 1, which parameters will only exclude samples with zero reads aligned to the reference.
 
-The effect of setting different subsampling proportions (`-sp`) is currently not extensively tested. If subsampling is turned on, the given proportion of reads of each loci will be downsampled randomly for the haplotype calling. If you set this, please try more different values to check for consistency and double-check the results to ensure no real variability is lost. Also, pay attention to not to downsample the coverage lower than the minimal read depth that `freebayes` even considers analyzing. This parameter is here for testing reasons only.
+The effect of setting different subsampling proportions (`-sc || --subsampling-count`) is currently not extensively tested. If subsampling is turned on, the given number of reads of each loci will be downsampled randomly for the haplotype calling. If you set this, please try more different values to check for consistency and double-check the results to ensure no real variability is lost. Also, pay attention to not to downsample the coverage lower than the minimal read depth that `freebayes` even considers analyzing. This parameter is here for testing reasons only.
 
 The pipeline will carry out a subsetting of the dataset, but it does not involve the downsampling of read depth, just the exclusion of alignments outside the alignment intervals (loci) set by `-minbc`. By default, read depth of the desired loci will be left unchanged. This is done for an easier handling of loci in later steps.
 
