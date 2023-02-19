@@ -629,10 +629,10 @@ if [[ $call == "yes" ]]; then
 
 		no_reads=$(bedtools coverage -a "${outdir}"/aligned/temp_${i}.bed -b "${outdir}"/aligned/"${i}".bam | cut -f 4)
 #		no_reads=$(echo "as.numeric($no_reads+1)" | R --vanilla --quiet | sed -n '2s/.* //p')
-		echo $no_reads
+		echo -e "number of reads to sample from locus alignment "$line" = "$no_reads""
 
 		ssmp_prop=$(echo "as.numeric($sub_num/$no_reads)" | R --vanilla --quiet | sed -n '2s/.* //p')
-#		echo $ssmp_prop
+		echo -e "proportion of reads for downsampling at locus "$line" "$ssmp_prop""
 
 		proplarger=$(awk -v x="$ssmp_prop" 'BEGIN { print (x >= 1.0) ? "yes" : "no" }')
 
