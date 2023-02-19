@@ -628,13 +628,13 @@ if [[ $call == "yes" ]]; then
 		echo "$coord" | sed "s/ /\t/g" > "${outdir}"/aligned/temp_${i}.bed
 
 		no_reads=$(bedtools coverage -a "${outdir}"/aligned/temp_${i}.bed -b "${outdir}"/aligned/"${i}".bam | cut -f 4)
-		no_reads=$(echo "$no_reads+1" | R --vanilla --quiet | sed -n '2s/.* //p')
-#		echo $no_reads
+#		no_reads=$(echo "as.numeric($no_reads+1)" | R --vanilla --quiet | sed -n '2s/.* //p')
+		echo $no_reads
 
-		ssmp_prop=$(echo $sub_num/$no_reads | R --vanilla --quiet | sed -n '2s/.* //p')
+		ssmp_prop=$(echo "as.numeric($sub_num/$no_reads)" | R --vanilla --quiet | sed -n '2s/.* //p')
 #		echo $ssmp_prop
 
-		proplarger=$(awk -v x="$ssmp_prop" 'BEGIN { print (x > 1.0) ? "yes" : "no" }')
+		proplarger=$(awk -v x="$ssmp_prop" 'BEGIN { print (x >= 1.0) ? "yes" : "no" }')
 
 		if [[ $proplarger == "yes" ]]; then
 			ssmp_prop="1.0"
