@@ -628,17 +628,22 @@ if [[ $call == "yes" ]]; then
 		echo "$coord" | sed "s/ /\t/g" > "${outdir}"/aligned/temp_${i}.bed
 
 		no_reads=$(bedtools coverage -a "${outdir}"/aligned/temp_${i}.bed -b "${outdir}"/aligned/"${i}".bam | cut -f 4)
-#		no_reads=$(echo "as.numeric($no_reads+1)" | R --vanilla --quiet | sed -n '2s/.* //p')
-		echo -e "number of reads to sample from locus alignment "$line" = "$no_reads""
+		echo -e "\nnumber of reads found at locus "$line" = "$no_reads""
+		echo -e "number of reads to downsample at locus "$line" = "$sub_num""
 
-		ssmp_prop=$(echo "as.numeric($sub_num/$no_reads)" | R --vanilla --quiet | sed -n '2s/.* //p')
-		echo -e "proportion of reads for downsampling at locus "$line" "$ssmp_prop""
+		if [[ "$no_reads" -gt 0 ]]; then
+			ssmp_prop=$(echo "$sub_num/$no_reads" | R --vanilla --quiet | sed -n '2s/.* //p')
+		else
+			ssmp_prop="0.0"
+		fi
 
 		proplarger=$(awk -v x="$ssmp_prop" 'BEGIN { print (x >= 1.0) ? "yes" : "no" }')
 
 		if [[ $proplarger == "yes" ]]; then
 			ssmp_prop="1.0"
 		fi
+
+		echo -e "proportion of reads for downsampling at locus "$line" = "$ssmp_prop"\n"
 
 		samtools view -h -b -L <(echo "$coord") -s "$ssmp_prop" "${outdir}"/aligned/"${i}".bam > "${outdir}/aligned/ssmp_${i}_${ssmp_prop}_${coord}.bam"
 #		rm "${outdir}"/aligned/temp_${i}.bed
