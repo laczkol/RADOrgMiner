@@ -643,6 +643,11 @@ if [[ $call == "yes" ]]; then
 			ssmp_prop="1.0"
 		fi
 
+		if [[ "$ssmp_prop" == *"e"* ]]; then
+			ssmp_prop=$(echo "$ssmp_prop" |\
+				awk -F"e" 'BEGIN{OFMT="%10.10f"} {print $1 * (10 ^ $2)}')
+		fi
+
 		echo -e "proportion of reads for downsampling at locus "$line" = "$ssmp_prop"\n"
 
 		samtools view -h -b -L <(echo "$coord") -s "$ssmp_prop" "${outdir}"/aligned/"${i}".bam > "${outdir}/aligned/ssmp_${i}_${ssmp_prop}_${coord}.bam"
