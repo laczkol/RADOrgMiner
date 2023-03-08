@@ -27,7 +27,7 @@ bwa_B=4
 bwa_O=6
 min_bed_cov=3
 max_bed_cov=1000000
-sub_prop=1.0
+sub_num=1000
 ploidy=1
 minqual=20
 mismatchqual=15
@@ -103,8 +103,8 @@ while [[ "$#" -gt 0 ]];
 			max_bed_cov=$2
 			shift
 			;;
-		-sp|--subsampling-prop)
-			sub_prop=$2
+		-sc|--subsampling-count)
+			sub_num=$2
 			shift
 			;;
 		-mbs|--min-bases-sequenced)
@@ -208,8 +208,8 @@ if [[ ${#ref} -le 1 && ${#popmap} -le 1 ]]; then
 	-maxbc --max-bed-coverage
 							Maximum coverage of a locus to be included in the output haplotypes. If the bed coverage of a locus is higher in any sample than this value, the locus will not be included in the analysis. If the read depth of known NUMTs or NUPTs is known to be high, it is recommended to use this parameter to exclude them. [default 1000000]
 
-	-sp --subsampling-prop
-							Float value between 0 and 1. To use less memory when calling haplotypes, each bed locus can be downsampled using samtools view by this proportion. 0.1 means: use 10% percent of all the reads found in a bed locus. The effect of downsampling is not tested properly, so use at your own risk and double check the results. [default 1.0]
+	-sc --subsampling-count
+							Integer. To use less memory when calling haplotypes, each bed locus can be downsampled to this number of reads. [default 1000]
 
 	-mbs --min-bases-sequenced
 							Defines the minimum number of bases sequenced in a sample to be included in the genotype calling. [default 0]
@@ -305,7 +305,7 @@ echo "Genotype calling is set to $call"
 echo "Sequencig type is $type"
 echo "BWA parameters are k=$bwa_k A=$bwa_A B=$bwa_B O=$bwa_O"
 echo "Minimal bed coverage is $min_bed_cov"
-echo "Subsampling proportion is $sub_prop"
+echo "Subsampling loci read count to $sub_num"
 echo "Ploidy is set to $ploidy"
 echo "Minimal base quality for genotype calling is $minqual"
 echo "Minimal base quality for genotype calling when a mismatch occurs is $mismatchqual"
@@ -595,7 +595,7 @@ if [[ $call == "yes" ]]; then
 	echo "The popmap reduced by -mbs and -mrc is:"
 	cat "$popmap_mbs"
 
-	echo "Subsetting bed loci with a subsampling proportion of $sub_prop"
+	echo "Subsetting bed loci to a read count of $sub_num"
 	for i in $inds_mbs
 	do
 		awk -v mincov="$min_bed_cov" -v maxcov="$max_bed_cov" '$4 > mincov && $4 < maxcov' "${outdir}"/aligned/"${i}".bed |\
@@ -611,12 +611,12 @@ if [[ $call == "yes" ]]; then
 	bedtools getfasta -fi "$ref_db" -fo "${outdir}"/aligned/reference_subset.fa -bed "${outdir}"/aligned/merged_alignments.bed
 	bwa index "${outdir}"/aligned/reference_subset.fa
 
-	proplarger=$(awk -v x="$sub_prop" 'BEGIN { print (x > 1.0) ? "yes" : "no" }')
+#	proplarger=$(awk -v x="$sub_prop" 'BEGIN { print (x > 1.0) ? "yes" : "no" }')
 
-	if [[ $proplarger == "yes" ]]; then
-		echo "Subsampling of reads can not be done with a proportion larger than 1.0"
-		exit 1
-	fi
+#	if [[ $proplarger == "yes" ]]; then
+#		echo "Subsampling of reads can not be done with a proportion larger than 1.0"
+#		exit 1
+#	fi
 
 	for i in $inds_mbs
 	do
@@ -625,8 +625,33 @@ if [[ $call == "yes" ]]; then
 		while read line
 		do 
 		coord=$(echo "$line" | cut -f 1-3 -d " ")
-		#echo $coord
-		samtools view -h -b -L <(echo "$coord") -s "$sub_prop" "${outdir}"/aligned/"${i}".bam > "${outdir}/aligned/ssmp_${i}_${sub_prop}_${coord}.bam"
+		echo "$coord" | sed "s/ /\t/g" > "${outdir}"/aligned/temp_${i}.bed
+
+		no_reads=$(bedtools coverage -a "${outdir}"/aligned/temp_${i}.bed -b "${outdir}"/aligned/"${i}".bam | cut -f 4)
+		echo -e "\nnumber of reads found at locus "$line" = "$no_reads""
+		echo -e "number of reads to downsample at locus "$line" = "$sub_num""
+
+		if [[ "$no_reads" -gt 0 ]]; then
+			ssmp_prop=$(echo "$sub_num/$no_reads" | R --vanilla --quiet | sed -n '2s/.* //p')
+		else
+			ssmp_prop="0.0"
+		fi
+
+		proplarger=$(awk -v x="$ssmp_prop" 'BEGIN { print (x >= 1.0) ? "yes" : "no" }')
+
+		if [[ $proplarger == "yes" ]]; then
+			ssmp_prop="1.0"
+		fi
+
+		if [[ "$ssmp_prop" == *"e"* ]]; then
+			ssmp_prop=$(echo "$ssmp_prop" |\
+				awk -F"e" 'BEGIN{OFMT="%10.10f"} {print $1 * (10 ^ $2)}')
+		fi
+
+		echo -e "proportion of reads for downsampling at locus "$line" = "$ssmp_prop"\n"
+
+		samtools view -h -b -L <(echo "$coord") -s "$ssmp_prop" "${outdir}"/aligned/"${i}".bam > "${outdir}/aligned/ssmp_${i}_${ssmp_prop}_${coord}.bam"
+#		rm "${outdir}"/aligned/temp_${i}.bed
 		done
 
 		samtools merge -b <(ls "${outdir}"/aligned/ssmp_"${i}"*.bam) -f "${outdir}"/aligned/"${i}"_subsampled.bam
