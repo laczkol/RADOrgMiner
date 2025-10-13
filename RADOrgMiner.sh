@@ -769,7 +769,7 @@ if [[ $call == "yes" ]]; then
 	if [[ ! -d ${outdir}/fasta_loci ]]; then
 		mkdir "${outdir}"/fasta_loci
 	elif [[ -d ${outdir}/fasta_loci ]]; then
-		rm "${outdir}"/fasta_loci/*
+		find "${outdir}/fasta_loci" -mindepth 1 -delete
 	fi
 
 	echo "Exporting sequnces of bed loci to fasta"
